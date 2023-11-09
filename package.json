@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "nodemon app",
     "start": "nodemon --watch \"./**/*.*\" --exec \"ts-node\" ./app.ts"
-  
   },
   "author": "",
   "license": "ISC",
