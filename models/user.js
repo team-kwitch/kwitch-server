@@ -3,24 +3,6 @@ const Sequelize = require('sequelize');
 module.exports = class User extends Sequelize.Model {
     static init(sequelize) {
         return super.init({
-            win: {
-                type:Sequelize.INTEGER,
-                allowNull: false,
-                defaultValue: 0,
-                validate:{
-                    isInt: true,
-                    min: 0,
-                }
-            },
-            lose: {
-                type: Sequelize.INTEGER,
-                allowNull: false,
-                defaultValue: 0,
-                validate: {
-                    isInt: true,
-                    min: 0,
-                }
-            }
         },
             {
                 sequelize,
