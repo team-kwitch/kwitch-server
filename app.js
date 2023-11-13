@@ -20,6 +20,8 @@ app.post("/signup", async (req, res)=>{
             const module = new LoginSystem(id, password);
             const execute = await module.Register();
 
+            console.log(id + " " + password);
+
             if(execute == 1){
                 console.log(id + "님이 회원가입 하셨습니다.");
                 res.status(200).send('success register');
