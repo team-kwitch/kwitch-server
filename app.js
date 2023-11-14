@@ -22,23 +22,25 @@ app.use(session({
     secret:process.env.COOKIE_SECRET,
     resave:false,
     saveUninitialized:true,
-    cookie : {
-        httpOnly:true,
-        secure:true
-    },
     store: new MySQLStore({
         host : config.host,
         port : 3306,
         user : config.user,
+        clearExpired: true,
         password : config.password,
         database : config.database
     })
 }))
 
 app.get("/", (req, res)=>{
-    const {login} = req.cookies;
-    console.log(login);
-    res.status(200).json({msg:'success login'});
+    const loginCookie = req.cookies.login;
+    if(loginCookie && loginCookie.isLogined == true){
+        res.status(200).json({msg:'success login'});
+    }
+    else{
+        // res.redirect("/signin");
+        res.status(400).json({msg:'Failed'});
+    }
 });
 
 //로그인
@@ -52,10 +54,14 @@ app.post("/signin", async (req, res)=>{
 
         if(execute != -1){
             console.log(id + "님이 로그인하셨습니다.");
-            req.session.userId = execute
+            console.log(req.session);
+            req.session.httpOnly = true;
+            req.session.secure = true;
+            req.session.cookie.maxAge = 6000;
+            req.session.userId = execute;
             req.session.isLogined = true;
             req.session.save(() => {
-                res.cookie('login', execute, { maxAge: 3600000, httpOnly: true }).redirect('/');
+                res.redirect('/');
             });
         }
         else{
@@ -69,6 +75,10 @@ app.post("/signin", async (req, res)=>{
         else res.status(401).json({msg:'Format Error'});
     }},
 );
+
+app.get("/signout", (req, res)=>{
+    res.clearCookie('login').redirect('/')
+});
 
 //회원가입
 app.post("/signup", async (req, res)=>{
