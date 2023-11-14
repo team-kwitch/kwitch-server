@@ -10,18 +10,18 @@ const {sequelize} = require('./models');
 
 const env = process.env.DATA_ENV || 'development';
 const config = require('./config/config.js')[env];
-console.log(config);
+
 const app = express();
     
 app.set('port', 8000);
 
 app.use(bodyParser.json());
-app.use(cookieParser());
 
 app.use(session({
+    key : 'login',
     secret:process.env.COOKIE_SECRET,
-    resave:false,
-    saveUninitialized:true,
+    resave: false,
+    saveUninitialized : true,
     store: new MySQLStore({
         host : config.host,
         port : 3306,
@@ -29,18 +29,14 @@ app.use(session({
         clearExpired: true,
         password : config.password,
         database : config.database
-    })
+    }),
+    cookie: {
+        maxAge: 3600000
+    }
 }))
 
 app.get("/", (req, res)=>{
-    const loginCookie = req.cookies.login;
-    if(loginCookie && loginCookie.isLogined == true){
-        res.status(200).json({msg:'success login'});
-    }
-    else{
-        // res.redirect("/signin");
-        res.status(400).json({msg:'Failed'});
-    }
+    res.status(200).json({msg:'success login'});
 });
 
 //로그인
@@ -52,21 +48,34 @@ app.post("/signin", async (req, res)=>{
         const module = new LoginSystem(id, password);
         const execute = await module.Login();
 
-        if(execute != -1){
-            console.log(id + "님이 로그인하셨습니다.");
-            console.log(req.session);
-            req.session.httpOnly = true;
-            req.session.secure = true;
-            req.session.cookie.maxAge = 6000;
-            req.session.userId = execute;
-            req.session.isLogined = true;
-            req.session.save(() => {
-                res.redirect('/');
-            });
+        console.log(req.session);
+        if (req.session.isLogined == false || req.session.isLogined == null) {
+             if(execute != -1){
+                    console.log(id + "님이 로그인하셨습니다.");
+                    console.log(req.session);
+                    req.session.userId = execute;
+                    req.session.isLogined = true;
+
+                    //세션 만료 시간은 1시간
+                    const hour = 3600000
+                    req.session.cookie.expires = new Date(Date.now() + hour)
+                    console.log(req.session);
+                    req.session.save((error) => {
+                        if (error) {
+                            console.log(error);
+                        }
+                        else {
+                            res.status(200).send("OK");
+                        }
+                    });
+                }
+                else{
+                    console.log(id + "님은 등록되지 않은 회원입니다.");
+                    res.status(400).json({msg:'failed username : ' + id,userId : execute});
+                }        
         }
-        else{
-            console.log(id + "님은 등록되지 않은 회원입니다.");
-            res.status(400).json({msg:'failed username : ' + id,userId : execute});
+        else {
+            res.status(401).send("이미 로그인중이십니다.");
         }
     }
     catch (err){
@@ -76,8 +85,16 @@ app.post("/signin", async (req, res)=>{
     }},
 );
 
-app.get("/signout", (req, res)=>{
-    res.clearCookie('login').redirect('/')
+app.get("/signout", (req, res) => {
+    if (req.session.isLogined == true) {
+        req.session.destroy(e => {
+            if (e) console.log(e);
+        });
+        res.status(200).send("OK");
+    }
+    else {
+        res.status(400).send("test");
+    }
 });
 
 //회원가입
