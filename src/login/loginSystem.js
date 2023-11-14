@@ -44,7 +44,7 @@ class LoginSystem{
 
     async Login(){
         const id = await cryptoModule.cipher(this._id);
-        let bool = false;
+        let bool = -1
         const comparePW = await new Promise(async (resolve, reject) =>{
             const salt = await Account.findOne({
                 attributes: ['salt'],
