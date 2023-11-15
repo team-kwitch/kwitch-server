@@ -43,7 +43,7 @@ app.get("/", (req, res)=>{
 app.post("/signin", async (req, res)=>{
     try{
         const LoginSystem = require("./src/login/loginSystem.js");
-        const {id, password} = req.body;
+        const {id, password, remember} = req.body;
 
         const module = new LoginSystem(id, password);
         const execute = await module.Login();
@@ -59,7 +59,9 @@ app.post("/signin", async (req, res)=>{
                     //세션 만료 시간은 1시간
                     const hour = 3600000
                     req.session.cookie.expires = new Date(Date.now() + hour)
-                    console.log(req.session);
+                    if(remember){
+                        req.session.cookie.maxAge = 3600000 * 24 * 7;
+                    }
                     req.session.save((error) => {
                         if (error) {
                             console.log(error);
