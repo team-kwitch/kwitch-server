@@ -1,8 +1,9 @@
 const dotenv = require('dotenv');
 const express = require('express');
 const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
-const session = require('express-session');                      
+const socketIO = require('socket.io');
+const session = require('express-session');       
+const http = require('http');           
 const MySQLStore = require('express-mysql-session')(session);
 dotenv.config();
 
@@ -13,9 +14,11 @@ const config = require('./config/config.js')[env];
 
 const app = express();
     
-app.set('port', 8000);
+app.set('port', 3000);
 
 app.use(bodyParser.json());
+
+app.use(express.static('./src/public'));
 
 app.use(session({
     key : 'login',
@@ -36,14 +39,14 @@ app.use(session({
 }))
 
 app.get("/", (req, res)=>{
-    res.status(200).json({msg:'success login'});
+    res.status(200).send("s");
 });
 
 //로그인
 app.post("/signin", async (req, res)=>{
     try{
         const LoginSystem = require("./src/login/loginSystem.js");
-        const {id, password, remember} = req.body;
+        const {id, password} = req.body;
 
         const module = new LoginSystem(id, password);
         const execute = await module.Login();
@@ -59,9 +62,7 @@ app.post("/signin", async (req, res)=>{
                     //세션 만료 시간은 1시간
                     const hour = 3600000
                     req.session.cookie.expires = new Date(Date.now() + hour)
-                    if(remember){
-                        req.session.cookie.maxAge = 3600000 * 24 * 7;
-                    }
+                    console.log(req.session);
                     req.session.save((error) => {
                         if (error) {
                             console.log(error);
@@ -131,7 +132,10 @@ app.post("/signup", async (req, res)=>{
     },
 );
 
-const server = app.listen(app.get('port'), async() => {
+const httpserver = http.createServer(app);
+const wsServer = socketIO(httpserver);
+
+httpserver.listen(app.get('port'), async() => {
     console.log(app.get('port'), '번 포트에서 대기중');
     await sequelize
         .sync({ force: false })
@@ -141,4 +145,13 @@ const server = app.listen(app.get('port'), async() => {
         .catch((error) => {
             console.log(error);
         });
+});
+
+wsServer.on("connection", (socket) => {
+    console.log("연결!!");
+    socket.on("enter_room", (roomName, done) => {
+        console.log(roomName + "에 입장합니다.");
+        socket.join(roomName);
+        done();
+    });
 });
