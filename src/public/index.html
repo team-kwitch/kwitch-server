@@ -4,17 +4,33 @@
 <head>
     <title>Home</title>
 </head>
-
 <body>
-    <h1 id="home">This is Home</h1>
+    <h1>반갑습니다</h1>
+    <h2 id="home">This is Home</h2>
+    <div>
+        <a>입장하실 채팅방을 써주세용</a>
+        <input id = "roomName" type = "text">
+        <button id="link" onclick="enter()">링크 스따또</button>
+    </div>
+    <div>
+        <a>채팅 내용 써주세용</a>
+        <input id="chat" type="text">
+        <button id="chatlink" onclick="enter()">채팅 보내기</button>
+    </div>
 </body>
 <script src="https://cdn.socket.io/4.1.3/socket.io.min.js"></script>
 <script>
-    const socket = io.connect('http://localhost:3000'); 
+    const button = document.getElementById("link");
+    const socket = io.connect('http://localhost:3000');
 
-    socket.emit('enter_room', 'roomName', (result) => {
-        const room = document.getElementById("home");
-        room.textContent = "접속 성공!!";
-    });
+    function enter(){
+        const input = document.getElementById("roomName").value;
+        console.log(input);
+
+        socket.emit('enter_room', input, (result) => {
+            const room = document.getElementById("home");
+            room.textContent = input + "방에 접속 성공!!";
+        });
+    }
 </script>
 </html>
