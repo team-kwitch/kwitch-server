@@ -150,7 +150,7 @@ httpserver.listen(app.get('port'), async() => {
 wsServer.on("connection", (socket) => {
     console.log("연결!!");
     socket.on("enter_room", (roomName, done) => {
-        console.log(roomName + "에 입장합니다.");
+        console.log(socket.id + "님이 " + roomName + "에 입장합니다.");
         socket.join(roomName);
         done();
     });
