@@ -44,6 +44,10 @@ app.post("/test", (req, res) => {
 });
 
 //로그인
+app.get("/signin", (req, res) => {
+    res.sendFile('public/login.html', { root: __dirname + '/src' });
+});
+
 app.post("/signin", async (req, res)=>{
     try{
         const LoginSystem = require("./src/login/loginSystem.js");
