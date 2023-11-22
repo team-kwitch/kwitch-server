@@ -13,32 +13,33 @@ const env = process.env.DATA_ENV || 'development';
 const config = require('./config/config.js')[env];
 
 const app = express();
-    
-app.set('port', 3000);
 
-app.use(bodyParser.json());
-
-app.use(express.static('./src/public'));
-
-app.use(session({
+const sessionMiddleware = session({
     key : 'login',
     secret:process.env.COOKIE_SECRET,
     resave: false,
-    saveUninitialized : true,
+    saveUninitialized: true,
+    rolling : true,
     store: new MySQLStore({
         host : config.host,
         port : 3306,
         user : config.user,
         clearExpired: true,
         password : config.password,
-        database : config.database
-    }),
-    cookie: {
-        maxAge: 3600000
-    }
-}))
+        database: config.database,
+    })
+});
 
-app.get("/", (req, res)=>{
+app.set('port', 3000);
+
+app.use(bodyParser.json());
+
+app.use(express.static('./src/public'));
+
+app.use(sessionMiddleware);
+
+app.post("/test", (req, res) => {
+    console.log(req.session);
     res.status(200).send("s");
 });
 
@@ -46,7 +47,7 @@ app.get("/", (req, res)=>{
 app.post("/signin", async (req, res)=>{
     try{
         const LoginSystem = require("./src/login/loginSystem.js");
-        const {id, password} = req.body;
+        const {id, password, isRemember} = req.body;
 
         const module = new LoginSystem(id, password);
         const execute = await module.Login();
@@ -55,14 +56,11 @@ app.post("/signin", async (req, res)=>{
         if (req.session.isLogined == false || req.session.isLogined == null) {
              if(execute != -1){
                     console.log(id + "님이 로그인하셨습니다.");
-                    console.log(req.session);
                     req.session.userId = execute;
                     req.session.isLogined = true;
 
-                    //세션 만료 시간은 1시간
-                    const hour = 3600000
-                    req.session.cookie.expires = new Date(Date.now() + hour)
-                    console.log(req.session);
+                    if(isRemember) req.session.cookie.maxAge = 86400000 * 14; //만약 로그인 상태 유지 옵션을 클릭해두면 14일간 유지
+                    else req.session.cookie.maxAge = 3600000; //기본 세션 만료 시간은 1시간
                     req.session.save((error) => {
                         if (error) {
                             console.log(error);
@@ -147,11 +145,26 @@ httpserver.listen(app.get('port'), async() => {
         });
 });
 
+wsServer.engine.use(sessionMiddleware);
+
 wsServer.on("connection", (socket) => {
     console.log("연결!!");
-    socket.on("enter_room", (roomName, done) => {
-        console.log(socket.id + "님이 " + roomName + "에 입장합니다.");
-        socket.join(roomName);
-        done();
-    });
+    const session = socket.request.session;
+    //TODO : 시청자수 몇명인지 구현
+    //TODO : 세션에 적힌 유저 아이디를 통해 DB에서 유저 닉네임 긁어오기
+    if(session.isLogined == true){
+        socket.on("enter_room", (roomName, done) => {
+            console.log(socket.id + "님이 " + roomName + "에 입장합니다.");
+            socket.join(roomName);
+            socket.to(roomName).emit("welcome", socket.id);
+            done();
+        });
+        socket.on("disconnecting", () => {
+            socket.rooms.forEach(room => socket.to(room).emit("bye"));
+        })
+        socket.on("send_message", (msg, room, done) => {
+            socket.to(room).emit("new_message", msg);
+            done();
+        });
+    }
 });
