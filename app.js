@@ -33,6 +33,7 @@ const sessionMiddleware = session({
 app.set('port', 3000);
 
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use(express.static('./src/public'));
 
@@ -51,6 +52,7 @@ app.get("/signin", (req, res) => {
 app.post("/signin", async (req, res)=>{
     try{
         const LoginSystem = require("./src/login/loginSystem.js");
+        console.log(req.body);
         const {id, password, isRemember} = req.body;
 
         const module = new LoginSystem(id, password);
@@ -156,11 +158,12 @@ wsServer.on("connection", (socket) => {
     const session = socket.request.session;
     //TODO : 시청자수 몇명인지 구현
     //TODO : 세션에 적힌 유저 아이디를 통해 DB에서 유저 닉네임 긁어오기
+    console.log(session);
     if(session.isLogined == true){
         socket.on("enter_room", (roomName, done) => {
-            console.log(socket.id + "님이 " + roomName + "에 입장합니다.");
+            console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
             socket.join(roomName);
-            socket.to(roomName).emit("welcome", socket.id);
+            socket.to(roomName).emit("welcome", session.userId);
             done();
         });
         socket.on("disconnecting", () => {
