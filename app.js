@@ -26,6 +26,7 @@ const sessionMiddleware = session({
         port : 3306,
         user : config.user,
         clearExpired: true,
+        checkExpirationInterval: 30000,
         password : config.password,
         database: config.database,
     }),
