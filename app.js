@@ -5,6 +5,7 @@ const socketIO = require('socket.io');
 const session = require('express-session');       
 const http = require('http');           
 const MySQLStore = require('express-mysql-session')(session);
+const passport = require('passport');
 dotenv.config();
 
 const {sequelize} = require('./models');
@@ -27,7 +28,10 @@ const sessionMiddleware = session({
         clearExpired: true,
         password : config.password,
         database: config.database,
-    })
+    }),
+    cookie: {
+        maxAge : 0
+      }
 });
 
 app.set('port', 3000);
@@ -38,6 +42,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static('./src/public'));
 
 app.use(sessionMiddleware);
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.post("/test", (req, res) => {
     console.log(req.session);
@@ -59,6 +66,7 @@ app.post("/signin", async (req, res)=>{
         const execute = await module.Login();
 
         console.log(req.session);
+        console.log(execute);
         if (req.session.isLogined == false || req.session.isLogined == null) {
              if(execute != -1){
                     console.log(id + "님이 로그인하셨습니다.");
@@ -92,15 +100,18 @@ app.post("/signin", async (req, res)=>{
     }},
 );
 
-app.get("/signout", (req, res) => {
-    if (req.session.isLogined == true) {
-        req.session.destroy(e => {
-            if (e) console.log(e);
-        });
-        res.status(200).send("OK");
-    }
-    else {
-        res.status(400).send("test");
+app.post('/signout', function(req, res){
+    if(req.session.userId){
+        req.session.destroy(function(err){ 
+            if(err){
+                console.log(err);
+            }else{
+                res.clearCookie('login');
+                res.redirect('/signin'); 
+            }
+        })
+    }else{
+        res.redirect('/signin');
     }
 });
 
