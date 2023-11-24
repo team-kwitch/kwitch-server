@@ -68,8 +68,8 @@ s<!DOCTYPE html>
         console.log(id + "님이 나갔습니다.");
     });
 
-    socket.on("new_message", (msg)=>{
-        addMessage(msg);
+    socket.on("new_message", (msg, userId)=>{
+        addMessage(userId + " : " + msg);
     });
 </script>
 </html>

@@ -71,6 +71,8 @@ app.post("/signin", async (req, res)=>{
         if (req.session.isLogined == false || req.session.isLogined == null) {
              if(execute != -1){
                     console.log(id + "님이 로그인하셨습니다.");
+                    const nickname = await module.GetInformation(execute);
+
                     req.session.userId = execute;
                     req.session.isLogined = true;
 
@@ -81,7 +83,11 @@ app.post("/signin", async (req, res)=>{
                             console.log(error);
                         }
                         else {
-                            res.status(200).send("OK");
+                            res.status(200).json({
+                                msg: 'successful login',
+                                userId : execute,
+                                nickname : nickname
+                            });
                         }
                     });
                 }
@@ -182,7 +188,7 @@ wsServer.on("connection", (socket) => {
             socket.rooms.forEach(room => socket.to(room).emit("bye"));
         })
         socket.on("send_message", (msg, room, done) => {
-            socket.to(room).emit("new_message", msg);
+            socket.to(room).emit("new_message", msg, session.userId);
             done();
         });
     }
