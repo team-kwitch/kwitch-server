@@ -5,6 +5,7 @@ const socketIO = require('socket.io');
 const session = require('express-session');       
 const http = require('http');           
 const MySQLStore = require('express-mysql-session')(session);
+const passport = require('passport');
 dotenv.config();
 
 const {sequelize} = require('./models');
@@ -13,62 +14,80 @@ const env = process.env.DATA_ENV || 'development';
 const config = require('./config/config.js')[env];
 
 const app = express();
-    
-app.set('port', 3000);
 
-app.use(bodyParser.json());
-
-app.use(express.static('./src/public'));
-
-app.use(session({
+const sessionMiddleware = session({
     key : 'login',
     secret:process.env.COOKIE_SECRET,
     resave: false,
-    saveUninitialized : true,
+    saveUninitialized: true,
+    rolling : true,
     store: new MySQLStore({
         host : config.host,
         port : 3306,
         user : config.user,
         clearExpired: true,
+        checkExpirationInterval: 30000,
         password : config.password,
-        database : config.database
+        database: config.database,
     }),
     cookie: {
-        maxAge: 3600000
-    }
-}))
+        maxAge : 0
+      }
+});
 
-app.get("/", (req, res)=>{
+app.set('port', 3000);
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use(express.static('./src/public'));
+
+app.use(sessionMiddleware);
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.post("/test", (req, res) => {
+    console.log(req.session);
     res.status(200).send("s");
 });
 
 //로그인
+app.get("/signin", (req, res) => {
+    res.sendFile('public/login.html', { root: __dirname + '/src' });
+});
+
 app.post("/signin", async (req, res)=>{
     try{
         const LoginSystem = require("./src/login/loginSystem.js");
-        const {id, password} = req.body;
+        console.log(req.body);
+        const {id, password, isRemember} = req.body;
 
         const module = new LoginSystem(id, password);
         const execute = await module.Login();
 
         console.log(req.session);
+        console.log(execute);
         if (req.session.isLogined == false || req.session.isLogined == null) {
              if(execute != -1){
                     console.log(id + "님이 로그인하셨습니다.");
-                    console.log(req.session);
+                    const nickname = await module.GetInformation(execute);
+
                     req.session.userId = execute;
                     req.session.isLogined = true;
 
-                    //세션 만료 시간은 1시간
-                    const hour = 3600000
-                    req.session.cookie.expires = new Date(Date.now() + hour)
-                    console.log(req.session);
+                    if(isRemember) req.session.cookie.maxAge = 86400000 * 14; //만약 로그인 상태 유지 옵션을 클릭해두면 14일간 유지
+                    else req.session.cookie.maxAge = 3600000; //기본 세션 만료 시간은 1시간
                     req.session.save((error) => {
                         if (error) {
                             console.log(error);
                         }
                         else {
-                            res.status(200).send("OK");
+                            res.status(200).json({
+                                msg: 'successful login',
+                                userId : execute,
+                                nickname : nickname
+                            });
                         }
                     });
                 }
@@ -88,15 +107,18 @@ app.post("/signin", async (req, res)=>{
     }},
 );
 
-app.get("/signout", (req, res) => {
-    if (req.session.isLogined == true) {
-        req.session.destroy(e => {
-            if (e) console.log(e);
-        });
-        res.status(200).send("OK");
-    }
-    else {
-        res.status(400).send("test");
+app.post('/signout', function(req, res){
+    if(req.session.userId){
+        req.session.destroy(function(err){ 
+            if(err){
+                console.log(err);
+            }else{
+                res.clearCookie('login');
+                res.redirect('/signin'); 
+            }
+        })
+    }else{
+        res.redirect('/signin');
     }
 });
 
@@ -147,11 +169,27 @@ httpserver.listen(app.get('port'), async() => {
         });
 });
 
+wsServer.engine.use(sessionMiddleware);
+
 wsServer.on("connection", (socket) => {
     console.log("연결!!");
-    socket.on("enter_room", (roomName, done) => {
-        console.log(roomName + "에 입장합니다.");
-        socket.join(roomName);
-        done();
-    });
+    const session = socket.request.session;
+    //TODO : 시청자수 몇명인지 구현
+    //TODO : 세션에 적힌 유저 아이디를 통해 DB에서 유저 닉네임 긁어오기
+    console.log(session);
+    if(session.isLogined == true){
+        socket.on("enter_room", (roomName, done) => {
+            console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
+            socket.join(roomName);
+            socket.to(roomName).emit("welcome", session.userId);
+            done();
+        });
+        socket.on("disconnecting", () => {
+            socket.rooms.forEach(room => socket.to(room).emit("bye"));
+        })
+        socket.on("send_message", (msg, room, done) => {
+            socket.to(room).emit("new_message", msg, session.userId);
+            done();
+        });
+    }
 });

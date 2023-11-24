@@ -1,20 +1,75 @@
-<!DOCTYPE html>
+s<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <title>Home</title>
 </head>
-
 <body>
-    <h1 id="home">This is Home</h1>
+    <style>
+        .chat { height: 350px; overflow-y: scroll;}
+        .line{margin-top: 10px; display: flex;}
+        .chatbox {background: #eee; padding: 5px; max-width: 200px;}
+        .mine {margin-left: auto;}
+    </style>
+    <h1>반갑습니다</h1>
+    <h2 id="home">This is Home</h2>
+    <div>
+        <a>입장하실 채팅방을 써주세용</a>
+        <input id = "roomName" type = "text">
+        <button id="link" onclick="enter()">링크 스따또</button>
+    </div>
+    <div>
+        <a>채팅 내용 써주세용</a>
+        <input id="chat" type="text">
+        <button id="chatlink" onclick="chat()">채팅 보내기</button>
+    </div>
+    <div>
+        <a>채팅이 보일 공간입니다</a>
+        <br>
+        <div class = "chat">
+        </div>
+
+    </div>
 </body>
 <script src="https://cdn.socket.io/4.1.3/socket.io.min.js"></script>
 <script>
-    const socket = io.connect('http://localhost:3000'); 
+    const button = document.getElementById("link");
+    const socket = io.connect('http://localhost:3000');
 
-    socket.emit('enter_room', 'roomName', (result) => {
-        const room = document.getElementById("home");
-        room.textContent = "접속 성공!!";
+    function enter(){
+        const input = document.getElementById("roomName").value;
+        console.log(input);
+
+        socket.emit('enter_room', input, (result) => {
+            const room = document.getElementById("home");
+            room.textContent = input + "방에 접속 성공!!";
+        });
+    }
+
+    function addMessage(value, target){
+        var template;
+        if(target == 0) template = '<div class="line"><span class="chatbox mine">' + value + '</span></div>';
+        else template = '<div class="line"><span class="chatbox">' + value + '</span></div>';
+        document.querySelector('.chat').insertAdjacentHTML('beforeend', template);
+    }
+
+    function chat(){
+        var value = document.querySelector('#chat').value
+        socket.emit("send_message", value, document.getElementById("roomName").value, () => {
+            addMessage(value, 0);
+        });
+    }
+
+    socket.on("welcome", (id)=>{
+        console.log(id + "님이 로그인 하셨습니다.");
+    });
+
+    socket.on("bye", (id) => {
+        console.log(id + "님이 나갔습니다.");
+    });
+
+    socket.on("new_message", (msg, userId)=>{
+        addMessage(userId + " : " + msg);
     });
 </script>
 </html>
