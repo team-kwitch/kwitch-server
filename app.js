@@ -174,22 +174,16 @@ wsServer.engine.use(sessionMiddleware);
 wsServer.on("connection", (socket) => {
     console.log("연결!!");
     const session = socket.request.session;
-    //TODO : 시청자수 몇명인지 구현
-    //TODO : 세션에 적힌 유저 아이디를 통해 DB에서 유저 닉네임 긁어오기
     console.log(session);
     if(session.isLogined == true){
-        socket.on("enter_room", (roomName, done) => {
+        socket.on("enter_room", (roomName, show) => {
             console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
             socket.join(roomName);
+            show();
             socket.to(roomName).emit("welcome", session.userId);
-            done();
         });
         socket.on("disconnecting", () => {
             socket.rooms.forEach(room => socket.to(room).emit("bye"));
-        })
-        socket.on("send_message", (msg, room, done) => {
-            socket.to(room).emit("new_message", msg, session.userId);
-            done();
-        });
+        });   
     }
 });
