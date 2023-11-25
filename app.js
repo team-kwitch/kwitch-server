@@ -5,7 +5,6 @@ const socketIO = require('socket.io');
 const session = require('express-session');       
 const http = require('http');           
 const MySQLStore = require('express-mysql-session')(session);
-const passport = require('passport');
 dotenv.config();
 
 const {sequelize} = require('./models');
@@ -44,12 +43,43 @@ app.use(express.static('./src/public'));
 
 app.use(sessionMiddleware);
 
-app.use(passport.initialize());
-app.use(passport.session());
-
 app.post("/test", (req, res) => {
     console.log(req.session);
     res.status(200).send("s");
+});
+
+app.get("/getuser", async (req, res) =>{
+    try{
+        if(req.session.userId != null){
+            console.log(req.session.userId);
+            const User = require('./models/user');
+
+            const user = await User.findOne({
+                attributes : ['nickname'],
+                where : {
+                    id : req.session.userId
+                }
+            });
+
+            res.status(200).json({
+                msg: 'successful getInformation',
+                userId : req.session.userId,
+                nickname : user.nickname
+            });
+        }
+        else{
+            res.status(403).json({
+                msg: '로그인 먼저 하세여'
+            });
+        }
+    }
+    catch(err){
+        console.log(err);
+
+        res.status(400).json({
+            msg: 'Unexpected Error'
+        });
+    }
 });
 
 //로그인

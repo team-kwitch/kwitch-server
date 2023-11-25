@@ -20,7 +20,6 @@
     "express-mysql-session": "^3.0.0",
     "express-session": "^1.17.3",
     "mysql2": "^3.6.3",
-    "passport": "^0.6.0",
     "sequelize": "^6.35.0",
     "sequelize-cli": "^6.6.2",
     "socket.io": "^4.7.2"
