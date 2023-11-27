@@ -154,6 +154,17 @@ app.post("/signup", async (req, res)=>{
     },
 );
 
+//룸 리스트
+app.get("/rooms", async (_, res) => {
+    
+    console.log(wsServer.sockets.adapter.rooms.keys());
+    const ans = [];
+    for(let roomId of wsServer.sockets.adapter.rooms.keys()){
+        ans.push(roomId)
+    }
+    res.json({roomList: ans});
+});
+
 const httpserver = http.createServer(app);
 const wsServer = socketIO(httpserver);
 
@@ -171,19 +182,41 @@ httpserver.listen(app.get('port'), async() => {
 
 wsServer.engine.use(sessionMiddleware);
 
+function publicRooms(){
+    const {
+        sockets: {
+            adapter: {sids, rooms},
+        },
+    } = wsServer;
+    const publicRooms = [];
+    rooms.forEach((_, key) =>{
+        if(sids.get(key) === undefined) {
+            publicRooms.push(key);
+        }
+    });
+    return publicRooms;
+}
+
 wsServer.on("connection", (socket) => {
     console.log("연결!!");
     const session = socket.request.session;
     console.log(session);
     if(session.isLogined == true){
-        socket.on("enter_room", (roomName, show) => {
+        socket.on("enter_room", (roomName) => {
             console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
             socket.join(roomName);
-            show();
             socket.to(roomName).emit("welcome", session.userId);
+            wsServer.sockets.emit("room_change", publicRooms());
         });
         socket.on("disconnecting", () => {
             socket.rooms.forEach(room => socket.to(room).emit("bye"));
-        });   
+            wsServer.sockets.emit("room_change", publicRooms());
+        });
+        socket.on("offer", (offer, roomName) => {
+            socket.to(roomName).emit("offer", offer);
+        });
+        socket.on("answer", (answer, roomName) => {
+            socket.to(roomName).emit("answer", answer);
+        });
     }
 });
