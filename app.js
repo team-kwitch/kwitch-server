@@ -163,7 +163,7 @@ app.get("/rooms", async (_, res) => {
         const userCnt = wsServer.sockets.adapter.rooms.get(roomId)?.size;
         ans.push({name: roomId, users: userCnt});
     }
-    res.json({roomList: ans});
+    res.json({roomlist: ans});
 });
 
 const httpserver = http.createServer(app);
