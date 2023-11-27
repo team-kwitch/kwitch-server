@@ -79,25 +79,41 @@ httpserver.listen(app.get('port'), async() => {
 
 wsServer.engine.use(sessionMiddleware);
 
+function publicRooms(){
+    const {
+        sockets: {
+            adapter: {sids, rooms},
+        },
+    } = wsServer;
+    const publicRooms = [];
+    rooms.forEach((_, key) =>{
+        if(sids.get(key) === undefined) {
+            publicRooms.push(key);
+        }
+    });
+    return publicRooms;
+}
+
 wsServer.on("connection", (socket) => {
     console.log("연결!!");
     const session = socket.request.session;
-    //TODO : 시청자수 몇명인지 구현
-    //TODO : 세션에 적힌 유저 아이디를 통해 DB에서 유저 닉네임 긁어오기
     console.log(session);
     if(session.isLogined == true){
-        socket.on("enter_room", (roomName, done) => {
+        socket.on("enter_room", (roomName) => {
             console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
             socket.join(roomName);
             socket.to(roomName).emit("welcome", session.userId);
-            done();
+            wsServer.sockets.emit("room_change", publicRooms());
         });
         socket.on("disconnecting", () => {
             socket.rooms.forEach(room => socket.to(room).emit("bye"));
-        })
-        socket.on("send_message", (msg, room, done) => {
-            socket.to(room).emit("new_message", msg, session.userId);
-            done();
+            wsServer.sockets.emit("room_change", publicRooms());
+        });
+        socket.on("offer", (offer, roomName) => {
+            socket.to(roomName).emit("offer", offer);
+        });
+        socket.on("answer", (answer, roomName) => {
+            socket.to(roomName).emit("answer", answer);
         });
     }
 });
