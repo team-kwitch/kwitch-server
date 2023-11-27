@@ -6,10 +6,38 @@
     <link rel="shortcut icon" href="#">
 </head>
 <body>
+    <style>
+        .chat { height: 350px; overflow-y: scroll;}
+        .line{margin-top: 10px; display: flex;}
+        .chatbox {background: #eee; padding: 5px; max-width: 200px;}
+        .mine {margin-left: auto;}
+    </style>
     <h1>반갑습니다</h1>
+    <h2 id="home">This is Home</h2>
+    <div>
+        <a>생성하실 채팅방을 써주세용</a>
+        <input id = "createName" type = "text">
+        <button id="link" onclick="create()">링크 스따또</button>
+    </div>
+    <div>
+        <a>입장하실 채팅방을 써주세용</a>
+        <input id = "roomName" type = "text">
+        <button id="link" onclick="enter()">링크 스따또</button>
+    </div>
+    <div>
+        <a>채팅 내용 써주세용</a>
+        <input id="chat" type="text">
+        <button id="chatlink" onclick="chat()">채팅 보내기</button>
+    </div>
+    <div>
+        <a>채팅이 보일 공간입니다</a>
+        <br>
+        <div class = "chat">
+        </div>
+
+    </div>
     <div id="room">
         <form>
-            <h2 id="home">This is Home</h2>
             <input type = "text">
             <button>Link</button>
         </form>
@@ -26,4 +54,57 @@
     <script type="text/javascript" src="/socket.io/socket.io.js"></script>
     <script type="text/javascript" src="script.js"></script>
 </body>
+<script>
+    const button = document.getElementById("link");
+
+    function enter(){
+        const input = document.getElementById("roomName").value;
+        console.log(input);
+
+        socket.emit('enter_room', input, (result) => {
+            const room = document.getElementById("home");
+            room.textContent = input + "방에 접속 성공!!";
+        });
+    }
+
+    function create(){
+        const input = document.getElementById("createName").value;
+        console.log(input);
+
+        socket.emit('create_room', input, (result) => {
+            const room = document.getElementById("home");
+            room.textContent = input + "방에 생성 및 접속 성공!!";
+        });
+    }
+
+    function addMessage(value, target){
+        var template;
+        if(target == 0) template = '<div class="line"><span class="chatbox mine">' + value + '</span></div>';
+        else template = '<div class="line"><span class="chatbox">' + value + '</span></div>';
+        document.querySelector('.chat').insertAdjacentHTML('beforeend', template);
+    }
+
+    function chat(){
+        var value = document.querySelector('#chat').value
+        socket.emit("send_message", value, document.getElementById("roomName").value, () => {
+            addMessage(value, 0);
+        });
+    }
+
+    socket.on("chatting_enter", (id)=>{
+        console.log(id + "님이 로그인 하셨습니다.");
+    });
+
+    socket.on("bye", (id) => {
+        console.log(id + "님이 나갔습니다.");
+    });
+
+    socket.on("new_message", (msg, account, nickname)=>{
+        addMessage(nickname + "(" + account + ")" + " : " + msg);
+    });
+
+    socket.on("no_room", (msg) => {
+        console.log(msg);
+    })
+</script>
 </html>
