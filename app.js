@@ -156,11 +156,12 @@ app.post("/signup", async (req, res)=>{
 
 //룸 리스트
 app.get("/rooms", async (_, res) => {
-    
-    console.log(wsServer.sockets.adapter.rooms.keys());
+    const iter = wsServer.sockets.adapter.rooms.keys();
+    console.log(iter.next());
     const ans = [];
-    for(let roomId of wsServer.sockets.adapter.rooms.keys()){
-        ans.push(roomId)
+    for(let roomId of iter){
+        const userCnt = wsServer.sockets.adapter.rooms.get(roomId)?.size;
+        ans.push({name: roomId, users: userCnt});
     }
     res.json({roomList: ans});
 });

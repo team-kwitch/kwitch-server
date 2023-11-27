@@ -94,14 +94,13 @@ async function initRoom(){
     call.hidden = false;
     await getMedia();
     makeConnection();
-    const h2 = form.querySelector("h2");
-    h2.innerText = `Room ${roomName}`;
 }
 
 async function handleRoomSubmit(event) {
     event.preventDefault();
     const input = form.querySelector("input");
-    console.log(input.value);
+    const h2 = form.querySelector("h2");
+    h2.innerText = `Room ${roomName}`;
     await initRoom();
     socket.emit("enter_room", input.value);
     roomName = input.value;
