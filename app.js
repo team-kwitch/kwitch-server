@@ -63,11 +63,13 @@ app.post("/test", (req, res) => {
 //룸 리스트
 app.get("/rooms", async (_, res) => {
     const iter = wsServer.sockets.adapter.rooms.keys();
-    console.log(iter.next());
     const ans = [];
+    const tmp = publicRooms();
     for(let roomId of iter){
-        const userCnt = wsServer.sockets.adapter.rooms.get(roomId)?.size;
-        ans.push({name: roomId, users: userCnt});
+        if(tmp.includes(roomId, -1)){
+            const userCnt = wsServer.sockets.adapter.rooms.get(roomId)?.size;
+            ans.push({name: roomId, users: userCnt});
+        }
     }
     res.json({roomlist: ans});
 });
