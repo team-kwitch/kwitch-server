@@ -6,6 +6,7 @@ const passport = require('passport');
 const http = require('http');
 const socket = require('./src/socket/socket.js');           
 const MySQLStore = require('express-mysql-session')(session);
+const Room = require('./models/room.js');
 dotenv.config();
 
 const {sequelize} = require('./models');
@@ -70,5 +71,15 @@ httpserver.listen(app.get('port'), async() => {
         })
         .catch((error) => {
             console.log(error);
+        });
+    await Room.destroy({
+        where: {},
+        truncate: true
+      })
+        .then(() => {
+          console.log('Room 테이블의 모든 데이터가 정상적으로 삭제되었습니다.');
+        })
+        .catch((error) => {
+          console.error('데이터 삭제 중 오류 발생:', error);
         });
 });

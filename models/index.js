@@ -22,6 +22,5 @@ Room.init(sequelize);
 
 Account.associate(db);
 User.associate(db);
-Room.associate(db);
 
 module.exports = db;
