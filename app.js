@@ -59,7 +59,6 @@ app.post("/test", (req, res) => {
 });
 
 const httpserver = http.createServer(app);
-
 const webSocket = socket(httpserver, sessionMiddleware);
 
 httpserver.listen(app.get('port'), async() => {

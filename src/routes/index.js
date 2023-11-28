@@ -110,9 +110,22 @@ router.post("/signup", async (req, res)=>{
 
 //룸 리스트
 router.get("/rooms", async (_, res) => {
+    
+    const wsServer = socket.getSocket();
     const iter = wsServer.sockets.adapter.rooms.keys();
     const ans = [];
-    const tmp = publicRooms();
+    const tmp = [];
+    const {
+        sockets: {
+            adapter: {sids, rooms},
+        },
+    } = wsServer;
+    wsServer.sockets.adapter.rooms
+        .forEach((_, key) =>{
+        if(sids.get(key) === undefined) {
+            tmp.push(key);
+        }
+    });
     for(let roomId of iter){
         if(tmp.includes(roomId, -1)){
             const userCnt = wsServer.sockets.adapter.rooms.get(roomId)?.size;
