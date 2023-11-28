@@ -153,12 +153,15 @@ wsServer.on("connection", (socket) => {
             socket.to(room).emit("new_message", filtered_msg, account, nickname);
             done();
         });
-        socket.on("kick", (userId) => {
-            const list = Array.from(wsServer.sockets.sockets.values()).filter(
-                (socket) => socket["userId"] == userId
-            );
-            console.log(list);
-            list.forEach((socket) => socket.disconnect());
+        socket.on("kick", async (accountId) => {
+            const userId = userInfo.getUserId(accountId);
+            
+            if(userId != -1 && userId != null){
+                const list = Array.from(wsServer.sockets.sockets.values()).filter(
+                    (socket) => socket["userId"] == userId
+                );
+                list.forEach((socket) => socket.disconnect());
+            }
         });
     }
 });

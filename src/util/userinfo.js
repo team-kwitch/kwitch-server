@@ -27,4 +27,23 @@ async function getInfo(userId){
     }
 }
 
-module.exports = {getInfo};
+async function getUserId(accountId){
+    try{
+        const cryptedId = crypto.cipher(accountId);
+
+        const account = await Account.findOne({
+            where : {
+                id : cryptedId
+            }
+        });
+        
+        if(account == null) return -1;
+        return account.dataValues.id;
+    }
+    catch(err){
+        console.log(err);
+        return -1;
+    }
+}
+
+module.exports = {getInfo, getUserId};
