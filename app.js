@@ -41,7 +41,7 @@ const sessionMiddleware = session({
       }
 });
 
-app.set('port', 3000);
+app.set('port', 8000);
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
