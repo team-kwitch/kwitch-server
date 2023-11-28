@@ -57,20 +57,6 @@ app.post("/test", (req, res) => {
     res.status(200).send("s");
 });
 
-//룸 리스트
-app.get("/rooms", async (_, res) => {
-    const iter = wsServer.sockets.adapter.rooms.keys();
-    const ans = [];
-    const tmp = publicRooms();
-    for(let roomId of iter){
-        if(tmp.includes(roomId, -1)){
-            const userCnt = wsServer.sockets.adapter.rooms.get(roomId)?.size;
-            ans.push({name: roomId, users: userCnt});
-        }
-    }
-    res.json({roomlist: ans});
-});
-
 const httpserver = http.createServer(app);
 
 const webSocket = socket(httpserver, sessionMiddleware);
