@@ -70,11 +70,11 @@ router.post('/signout', function(req, res){
                 console.log(err);
             }else{
                 res.clearCookie('login');
-                res.redirect('/signin'); 
+                res.status(200).send("logout");
             }
         })
     }else{
-        res.redirect('/signin');
+        res.status(400).send("logout failed");
     }
 });
 
