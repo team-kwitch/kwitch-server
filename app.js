@@ -6,6 +6,7 @@ const passport = require('passport');
 const http = require('http');
 const socket = require('./src/socket/socket.js');           
 const MySQLStore = require('express-mysql-session')(session);
+const Room = require('./models/room.js');
 dotenv.config();
 
 const {sequelize} = require('./models');
@@ -57,20 +58,6 @@ app.post("/test", (req, res) => {
     res.status(200).send("s");
 });
 
-//룸 리스트
-app.get("/rooms", async (_, res) => {
-    const iter = wsServer.sockets.adapter.rooms.keys();
-    const ans = [];
-    const tmp = publicRooms();
-    for(let roomId of iter){
-        if(tmp.includes(roomId, -1)){
-            const userCnt = wsServer.sockets.adapter.rooms.get(roomId)?.size;
-            ans.push({name: roomId, users: userCnt});
-        }
-    }
-    res.json({roomlist: ans});
-});
-
 const httpserver = http.createServer(app);
 
 const webSocket = socket(httpserver, sessionMiddleware);
@@ -84,5 +71,15 @@ httpserver.listen(app.get('port'), async() => {
         })
         .catch((error) => {
             console.log(error);
+        });
+    await Room.destroy({
+        where: {},
+        truncate: true
+      })
+        .then(() => {
+          console.log('Room 테이블의 모든 데이터가 정상적으로 삭제되었습니다.');
+        })
+        .catch((error) => {
+          console.error('데이터 삭제 중 오류 발생:', error);
         });
 });

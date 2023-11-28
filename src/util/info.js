@@ -1,5 +1,6 @@
 const User = require('../../models/user');
 const Account = require('../../models/account');
+const Room = require('../../models/room');
 const crypto = require("./crypto");
 
 async function getInfo(userId){

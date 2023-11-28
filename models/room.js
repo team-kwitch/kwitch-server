@@ -22,8 +22,4 @@ module.exports = class Account extends Sequelize.Model{
                 collate: 'utf8_general_ci',
             });
     }
-
-    static associate(db) {
-        db.Account.belongsTo(db.User, {foreignKey: 'UserId', targetKey: 'id'});
-    }
 }

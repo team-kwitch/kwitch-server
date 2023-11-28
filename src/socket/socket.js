@@ -34,7 +34,7 @@ module.exports = (httpserver, sessionMiddleware) => {
 
     wsServer.engine.use(sessionMiddleware);
 
-    const users = {};
+    const roomRoles = {};
     
     wsServer.on("connection", (socket) => {
         console.log("연결!!");
@@ -56,7 +56,12 @@ module.exports = (httpserver, sessionMiddleware) => {
                 if(!wsServer.sockets.adapter.rooms.get(roomName)){
                     console.log(session.userId + "님이 " + roomName + "방을 생성합니다.");
                     socket['userId'] = session.userId;
+                    if(!roomRoles[roomName]){
+                        roomRoles[roomName] = {};
+                    }
+                    roomRoles[roomName][session.userId] = {role : 'leader'};
                     await userInfo.setRoomTitle(roomName, title);
+                    console.log(roomRoles);
                     socket.join(roomName);
                     socket.to(roomName).emit("chatting_enter", session.userId);
                     wsServer.sockets.emit("room_change", publicRooms());
@@ -67,6 +72,9 @@ module.exports = (httpserver, sessionMiddleware) => {
             });
             socket.on("disconnecting", () => {
                 socket.rooms.forEach(room => socket.to(room).emit("bye"));
+                wsServer.sockets.emit("room_change", publicRooms());
+            });
+            socket.on("disconnect", () => {
                 wsServer.sockets.emit("room_change", publicRooms());
             });
             socket.on("offer", (offer, roomName) => {
@@ -81,14 +89,24 @@ module.exports = (httpserver, sessionMiddleware) => {
                 socket.to(room).emit("new_message", filtered_msg, account, nickname);
                 done();
             });
-            socket.on("kick", async (accountId) => {
-                const userId = userInfo.getUserId(accountId);
+            socket.on("kick", async (accountId, roomName) => {
+                const checkuser = roomRoles[roomName][session.userId];
+                if(checkuser){
+                    //그 방의 방장이나 매니저만 권한이 있음
+                    if(checkuser.role == 'leader' || checkuser.role == 'manager'){
+                        //강퇴할 유저의 아이디를 바탕으로 userId를 얻어옴
+                        const userId = userInfo.getUserId(accountId);
                 
-                if(userId != -1 && userId != null){
-                    const list = Array.from(wsServer.sockets.sockets.values()).filter(
-                        (socket) => socket["userId"] == userId
-                    );
-                    list.forEach((socket) => socket.disconnect());
+                        if(userId != -1 && userId != null){
+                            const list = Array.from(wsServer.sockets.sockets.values()).filter(
+                                (socket) => socket["userId"] == userId
+                            );
+                            list.forEach((socket) => socket.leave(roomName));
+                        }
+                    }
+                }
+                else{
+                    socket.to(socket.id).emit("error", '권한 거부');
                 }
             });
         }
