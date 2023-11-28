@@ -9,7 +9,7 @@ class LoginSystem{
         this._password = pass;
     }
 
-    async Register(){
+    async Register(nickname){
         const cryptedId = await cryptoModule.cipher(this._id);
         
         const exist = await Account.findOne({
@@ -30,7 +30,7 @@ class LoginSystem{
 
             //DB에 계정 정보 등록
             const account = await Account.create({id: cryptedId, password: cryptedPW, salt: salt});
-            const user = await User.create({nickname:this._id});
+            const user = await User.create({nickname:nickname});
             await account.setUser(user);
 
             console.log("회원가입 성공");

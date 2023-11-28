@@ -5,7 +5,8 @@ const socketIO = require('socket.io');
 const session = require('express-session');
 const admin_ui = require('@socket.io/admin-ui');
 const userInfo = require('./src/util/userinfo.js'); 
-const filter = require('./src/util/filtering.js');      
+const filter = require('./src/util/filtering.js');   
+const passport = require('passport');   
 const http = require('http');           
 const MySQLStore = require('express-mysql-session')(session);
 dotenv.config();
@@ -48,6 +49,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static('./src/public'));
 
 app.use(sessionMiddleware);
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use("/", indexRouter);
 app.use("/user", userRouter);
@@ -55,6 +58,18 @@ app.use("/user", userRouter);
 app.post("/test", (req, res) => {
     console.log(req.session);
     res.status(200).send("s");
+});
+
+//룸 리스트
+app.get("/rooms", async (_, res) => {
+    const iter = wsServer.sockets.adapter.rooms.keys();
+    console.log(iter.next());
+    const ans = [];
+    for(let roomId of iter){
+        const userCnt = wsServer.sockets.adapter.rooms.get(roomId)?.size;
+        ans.push({name: roomId, users: userCnt});
+    }
+    res.json({roomlist: ans});
 });
 
 const httpserver = http.createServer(app);
@@ -105,6 +120,7 @@ wsServer.on("connection", (socket) => {
         socket.on("enter_room", (roomName) => {
             if(wsServer.sockets.adapter.rooms.get(roomName)){
                 console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
+                socket['userId'] = session.userId;
                 socket.join(roomName);
                 socket.to(roomName).emit("chatting_enter", session.userId);
                 wsServer.sockets.emit("room_change", publicRooms());
@@ -115,6 +131,7 @@ wsServer.on("connection", (socket) => {
         });
         socket.on("create_room", (roomName) => {
             console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
+            socket['userId'] = session.userId;
             socket.join(roomName);
             socket.to(roomName).emit("chatting_enter", session.userId);
             wsServer.sockets.emit("room_change", publicRooms());
@@ -135,6 +152,13 @@ wsServer.on("connection", (socket) => {
             console.log(filtered_msg);
             socket.to(room).emit("new_message", filtered_msg, account, nickname);
             done();
+        });
+        socket.on("kick", (userId) => {
+            const list = Array.from(wsServer.sockets.sockets.values()).filter(
+                (socket) => socket["userId"] == userId
+            );
+            console.log(list);
+            list.forEach((socket) => socket.disconnect());
         });
     }
 });

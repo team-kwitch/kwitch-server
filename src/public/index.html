@@ -30,6 +30,11 @@
         <button id="chatlink" onclick="chat()">채팅 보내기</button>
     </div>
     <div>
+        <a>강퇴할 유저를 써주세용</a>
+        <input id="kick" type="text">
+        <button id="chatlink" onclick="kick()">채팅 보내기</button>
+    </div>
+    <div>
         <a>채팅이 보일 공간입니다</a>
         <br>
         <div class = "chat">
@@ -77,6 +82,16 @@
         });
     }
 
+    function kick(){
+        const input = document.getElementById("kick").value;
+        console.log(input);
+
+        socket.emit('kick', input, (result) => {
+            const room = document.getElementById("home");
+            room.textContent = input + " 내보내기 성공!!";
+        });
+    }
+
     function addMessage(value, target){
         var template;
         if(target == 0) template = '<div class="line"><span class="chatbox mine">' + value + '</span></div>';
@@ -96,10 +111,12 @@
     });
 
     socket.on("bye", (id) => {
+        alert(id + "님이 나갔습니다.");
         console.log(id + "님이 나갔습니다.");
     });
 
     socket.on("new_message", (msg, account, nickname)=>{
+        alert(msg);
         addMessage(nickname + "(" + account + ")" + " : " + msg);
     });
 
