@@ -112,25 +112,18 @@ router.post("/signup", async (req, res)=>{
 router.get("/rooms", async (_, res) => {
     
     const wsServer = socket.getSocket();
-    const iter = wsServer.sockets.adapter.rooms.keys();
-    const ans = [];
-    const tmp = [];
+    const ids = Array.from(wsServer.sockets.adapter.sids.keys());
     const {
         sockets: {
             adapter: {sids, rooms},
         },
     } = wsServer;
-    wsServer.sockets.adapter.rooms
-        .forEach((_, key) =>{
-        if(sids.get(key) === undefined) {
-            tmp.push(key);
-        }
-    });
-    for(let roomId of iter){
-        if(tmp.includes(roomId, -1)){
-            const userCnt = wsServer.sockets.adapter.rooms.get(roomId)?.size;
-            ans.push({name: roomId, users: userCnt});
-        }
+    const tmp = Array.from(wsServer.sockets.adapter.rooms.keys());
+    const names = tmp.filter(id => !ids.includes(id));     
+    const ans = [];
+    for(let roomId of names){
+        const userCnt = wsServer.sockets.adapter.rooms.get(roomId)?.size;
+        ans.push({name: roomId, users: userCnt});
     }
     res.json({roomlist: ans});
 });
