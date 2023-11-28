@@ -4,7 +4,7 @@ const Account = require('../../models/account');
 const LoginSystem = require("../login/loginSystem.js");
 const crypto = require("../util/crypto");
 const path = require('path');
-
+const socket = require("../socket/socket.js");
 const router = express.Router();
 
 //로그인
@@ -81,10 +81,10 @@ router.post('/signout', function(req, res){
 //회원가입
 router.post("/signup", async (req, res)=>{
         try{
-            const {id, password} = req.body;
+            const {id, password, nickname} = req.body;
 
             const module = new LoginSystem(id, password);
-            const execute = await module.Register();
+            const execute = await module.Register(nickname);
 
             console.log(id + " " + password);
 
@@ -107,5 +107,18 @@ router.post("/signup", async (req, res)=>{
         }
     },
 );
+
+//룸 리스트
+router.get("/rooms", async (_, res) => {
+    const wsServer = socket.getSocket();
+    const iter = wsServer.sockets.adapter.rooms.keys();
+    console.log(iter.next());
+    const ans = [];
+    for(let roomId of iter){
+        const userCnt = wsServer.sockets.adapter.rooms.get(roomId)?.size;
+        ans.push({name: roomId, users: userCnt});
+    }
+    res.json({roomlist: ans});
+});
 
 module.exports = router;
