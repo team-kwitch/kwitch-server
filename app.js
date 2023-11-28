@@ -161,6 +161,7 @@ app.get("/rooms", async (_, res) => {
     const ans = [];
     for(let roomId of iter){
         const userCnt = wsServer.sockets.adapter.rooms.get(roomId)?.size;
+        console.log(wsServer.sockets.adapter.rooms.get(roomId));
         ans.push({name: roomId, users: userCnt});
     }
     res.json({roomlist: ans});
@@ -218,6 +219,9 @@ wsServer.on("connection", (socket) => {
         });
         socket.on("answer", (answer, roomName) => {
             socket.to(roomName).emit("answer", answer);
+        });
+        socket.on("ice", (ice, roomName) => {
+            socket.to(roomName).emit("ice", ice);
         });
     }
 });
