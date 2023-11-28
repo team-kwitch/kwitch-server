@@ -12,10 +12,6 @@ module.exports = (httpserver, sessionMiddleware) => {
             credential : true
         }
     });
-    
-    admin_ui.instrument(wsServer, {
-        auth : false
-    });
 
     function publicRooms(){
         const {
@@ -31,6 +27,10 @@ module.exports = (httpserver, sessionMiddleware) => {
         });
         return publicRooms;
     }
+    
+    admin_ui.instrument(wsServer, {
+        auth : false
+    });
 
     wsServer.engine.use(sessionMiddleware);
 
