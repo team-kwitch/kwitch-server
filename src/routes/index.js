@@ -109,7 +109,7 @@ router.post("/signup", async (req, res)=>{
 );
 
 //룸 리스트
-app.get("/rooms", async (_, res) => {
+router.get("/rooms", async (_, res) => {
     const iter = wsServer.sockets.adapter.rooms.keys();
     const ans = [];
     const tmp = publicRooms();
