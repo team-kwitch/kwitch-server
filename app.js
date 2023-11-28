@@ -4,7 +4,8 @@ const bodyParser = require('body-parser');
 const socketIO = require('socket.io');
 const session = require('express-session');
 const admin_ui = require('@socket.io/admin-ui');
-const userInfo = require('./src/util/userinfo.js');       
+const userInfo = require('./src/util/userinfo.js'); 
+const filter = require('./src/util/filtering.js');      
 const http = require('http');           
 const MySQLStore = require('express-mysql-session')(session);
 dotenv.config();
@@ -130,7 +131,9 @@ wsServer.on("connection", (socket) => {
         });
         socket.on("send_message", async (msg, room, done) => {
             const {account, nickname} = await userInfo.getInfo(session.userId);
-            socket.to(room).emit("new_message", msg, account, nickname);
+            let filtered_msg = filter.KMP(msg);
+            console.log(filtered_msg);
+            socket.to(room).emit("new_message", filtered_msg, account, nickname);
             done();
         });
     }
