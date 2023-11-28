@@ -117,7 +117,7 @@
 
     socket.on("new_message", (msg, account, nickname)=>{
         alert(msg);
-        addMessage(nickname + "(" + account + ")" + " : " + msg);
+        addMessage(nickname + "(" + account + ")" + " : " + msg, 1);
     });
 
     socket.on("no_room", (msg) => {

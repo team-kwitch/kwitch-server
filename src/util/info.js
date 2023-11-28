@@ -46,4 +46,13 @@ async function getUserId(accountId){
     }
 }
 
-module.exports = {getInfo, getUserId};
+async function setRoomTitle(roomName, title){
+    try{
+        const room = await Room.create({name:roomName, title:title});
+    }
+    catch(err){
+        console.log(err);
+    }
+}
+
+module.exports = {getInfo, getUserId, setRoomTitle};

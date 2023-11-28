@@ -1,13 +1,10 @@
 const dotenv = require('dotenv');
 const express = require('express');
 const bodyParser = require('body-parser');
-const socketIO = require('socket.io');
-const session = require('express-session');
-const admin_ui = require('@socket.io/admin-ui');
-const userInfo = require('./src/util/userinfo.js'); 
-const filter = require('./src/util/filtering.js');   
+const session = require('express-session');   
 const passport = require('passport');   
-const http = require('http');           
+const http = require('http');
+const socket = require('./src/socket/socket.js');           
 const MySQLStore = require('express-mysql-session')(session);
 dotenv.config();
 
@@ -75,16 +72,8 @@ app.get("/rooms", async (_, res) => {
 });
 
 const httpserver = http.createServer(app);
-const wsServer = socketIO(httpserver, {
-    cors: {
-        origin : ["https://admin.socket.io"],
-        credential : true
-    }
-});
 
-admin_ui.instrument(wsServer, {
-    auth : false
-});
+const webSocket = socket(httpserver, sessionMiddleware);
 
 httpserver.listen(app.get('port'), async() => {
     console.log(app.get('port'), '번 포트에서 대기중');
@@ -96,74 +85,4 @@ httpserver.listen(app.get('port'), async() => {
         .catch((error) => {
             console.log(error);
         });
-});
-
-wsServer.engine.use(sessionMiddleware);
-
-function publicRooms(){
-    const {
-        sockets: {
-            adapter: {sids, rooms},
-        },
-    } = wsServer;
-    const publicRooms = [];
-    rooms.forEach((_, key) =>{
-        if(sids.get(key) === undefined) {
-            publicRooms.push(key);
-        }
-    });
-    return publicRooms;
-}
-
-wsServer.on("connection", (socket) => {
-    console.log("연결!!");
-    const session = socket.request.session;
-    if(session.isLogined == true){
-        socket.on("enter_room", (roomName) => {
-            if(wsServer.sockets.adapter.rooms.get(roomName)){
-                console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
-                socket['userId'] = session.userId;
-                socket.join(roomName);
-                socket.to(roomName).emit("chatting_enter", session.userId);
-                wsServer.sockets.emit("room_change", publicRooms());
-            }
-            else{
-                wsServer.to(socket.id).emit("no_room", 'no room');
-            }
-        });
-        socket.on("create_room", (roomName) => {
-            console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
-            socket['userId'] = session.userId;
-            socket.join(roomName);
-            socket.to(roomName).emit("chatting_enter", session.userId);
-            wsServer.sockets.emit("room_change", publicRooms());
-        });
-        socket.on("disconnecting", () => {
-            socket.rooms.forEach(room => socket.to(room).emit("bye"));
-            wsServer.sockets.emit("room_change", publicRooms());
-        });
-        socket.on("offer", (offer, roomName) => {
-            socket.to(roomName).emit("offer", offer);
-        });
-        socket.on("answer", (answer, roomName) => {
-            socket.to(roomName).emit("answer", answer);
-        });
-        socket.on("send_message", async (msg, room, done) => {
-            const {account, nickname} = await userInfo.getInfo(session.userId);
-            let filtered_msg = filter.KMP(msg);
-            console.log(filtered_msg);
-            socket.to(room).emit("new_message", filtered_msg, account, nickname);
-            done();
-        });
-        socket.on("kick", async (accountId) => {
-            const userId = userInfo.getUserId(accountId);
-            
-            if(userId != -1 && userId != null){
-                const list = Array.from(wsServer.sockets.sockets.values()).filter(
-                    (socket) => socket["userId"] == userId
-                );
-                list.forEach((socket) => socket.disconnect());
-            }
-        });
-    }
 });
