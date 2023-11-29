@@ -110,9 +110,19 @@ async function handleRoomSubmit(event) {
 
 function makeConnection(){
     myPeerConnection = new RTCPeerConnection();
+    myPeerConnection.addEventListener("icecandidate", handleIce);
+    myPeerConnection.addEventListener("addstream", handleAddStream);
     myStream
     .getTracks()
     .forEach(track => myPeerConnection.addTrack(track, myStream));
+}
+
+function handleIce(data) {
+    socket.emit("ice", data.candidate, roomName);
+}
+  
+function handleAddStream(data) {
+    myCam.srcObject = data.stream;
 }
 
 socket.on("welcome", async (id)=>{
@@ -132,7 +142,11 @@ socket.on("offer", async (offer) => {
 
 socket.on("answer", (answer) => {
     myPeerConnection.setRemoteDescription(answer);
-  });
+});
+
+socket.on("ice", (ice) => {
+    myPeerConnection.addIceCandidate(ice);
+});
 
 socket.on("bye", (id) => {
     console.log(id + "님이 나갔습니다.");

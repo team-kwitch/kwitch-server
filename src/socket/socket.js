@@ -83,6 +83,9 @@ module.exports = (httpserver, sessionMiddleware) => {
             socket.on("answer", (answer, roomName) => {
                 socket.to(roomName).emit("answer", answer);
             });
+            socket.on("ice", (ice, roomName) =>{
+                socket.to(roomName).emit("ice", ice);
+            });
             socket.on("send_message", async (msg, room, done) => {
                 const {account, nickname} = await userInfo.getInfo(session.userId);
                 let filtered_msg = filter.KMP(msg);
