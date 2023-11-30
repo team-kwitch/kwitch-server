@@ -18,6 +18,7 @@ const app = express();
 
 const indexRouter = require('./src/routes/');
 const userRouter = require('./src/routes/user');
+const roomRouter = require('./src/routes/room');
 
 const sessionMiddleware = session({
     key : 'login',
@@ -52,6 +53,7 @@ app.use(passport.session());
 
 app.use("/", indexRouter);
 app.use("/user", userRouter);
+app.use("/room", roomRouter);
 
 app.post("/test", (req, res) => {
     console.log(req.session);

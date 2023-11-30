@@ -1,3 +1,5 @@
+const filter = ["씨발", "병신", "좇", "개새끼", "새끼", "ㅅㅂ", "ㅄ", "ㅂㅅ", "ㄳㄲ", "ㄱㅅㄲ", "시발"];
+
 function makeTable(P){
     let pi = new Array(P.length).fill(0);
 
@@ -14,39 +16,49 @@ function makeTable(P){
     return pi;
 }
 
-function KMP(T){
-    const filter = ["씨발", "병신", "좇", "개새끼", "새끼", "ㅅㅂ", "ㅄ", "ㅂㅅ", "ㄳㄲ", "ㄱㅅㄲ", "시발"];
+function KMP(T, P){
+    let list = [];
 
-    for(let k = 0; k<filter.length; k++){
-        const P = filter[k];
-        let list = [];
+    const pi = makeTable(P);
 
-        const pi = makeTable(P);
-
-        let j = 0;
-        for (let i = 0; i < T.length; i++) {
-            while (j > 0 && P.charAt(j) !== T.charAt(i)) {
-                j = pi[j - 1];
-            }
-            if (P.charAt(j) === T.charAt(i)) {
-                if (j === P.length - 1) {
-                    list.push(i - P.length + 1);
-                    j = pi[j];
-                } else {
-                    j++;
-                }
+    let j = 0;
+    for (let i = 0; i < T.length; i++) {
+        while (j > 0 && P.charAt(j) !== T.charAt(i)) {
+            j = pi[j - 1];
+        }
+        if (P.charAt(j) === T.charAt(i)) {
+            if (j === P.length - 1) {
+                list.push(i - P.length + 1);
+                j = pi[j];
+            } else {
+                j++;
             }
         }
+    }
+
+    return list;
+}
+
+function filterSentence(string){
+    for(let i = 0; i<filter.length; i++){
+        list = KMP(string, filter[i]);
 
         for (let idx of list) {
             for (let i = idx; i < P.length + idx; i++) {
                 T = T.substring(0, i) + '*' + T.substring(i + 1);
             }
         }
-        
     }
-
-    return T;
 }
 
-module.exports = {KMP};
+function checkAbuse(string){
+    for(let i = 0; i<filter.length; i++){
+        list = KMP(string, filter[i]);
+
+        if(list.length > 0) return true;
+    }
+
+    return false;
+}
+
+module.exports = {checkAbuse, filter};

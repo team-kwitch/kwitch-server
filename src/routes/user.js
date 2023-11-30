@@ -3,6 +3,7 @@ const User = require('../../models/user');
 const Account = require('../../models/account');
 const crypto = require("../util/crypto");
 const info = require("../util/info");
+const filter = require("../util/filtering");
 const path = require('path');
 
 const router = express.Router();
@@ -31,7 +32,6 @@ router.get('/info', async (req, res) => {
 
         res.status(200).json({
             msg: 'successful getInformation',
-            userId : handle,
             accountId : account,
             nickname : nickname
         });
@@ -86,7 +86,10 @@ router.put('/modify', async (req, res) => {
             res.status(400).json({msg: 'Nickname is too short' });
             return;
         }
-        //TODO : KMP기반 욕설 닉네임 탐지
+        if (filter.checkAbuse(nickname)){
+            res.status(400).json({msg: 'Nickname contains an abusive word'});
+            return;
+        }
 
         const account = await Account.findOne({
             where : {

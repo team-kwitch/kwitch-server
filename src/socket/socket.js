@@ -2,6 +2,7 @@ const socketIO = require('socket.io');
 const admin_ui = require('@socket.io/admin-ui');
 const userInfo = require('../util/info.js'); 
 const filter = require('../util/filtering.js');
+const Room = require('../../models/room.js');
 
 let wsServer = null;
 
@@ -79,6 +80,29 @@ module.exports = (httpserver, sessionMiddleware) => {
             });
 
             //방 삭제하기 이벤트
+            socket.on("destroy_room", async (roomName) =>{
+                try{
+                    const checkroom = roomRoles[roomName];
+                    const room = await Room.findOne({
+                        name : roomName
+                    });
+                    if(room != null){
+                        //그 방의 방장에게만 방송 종료 권한이 있음
+                        if(checkroom.leader == session.userId){
+                            sockets.clients(roomName).forEach(function(s){
+                                s.leave(roomName);
+                            });
+                            socket.leave(roomName);
+                            console.log(roomName + "방송이 종료되었습니다");
+                            await room.destroy();
+                        }
+                    }
+                }
+                catch(err){
+                    console.log(err);
+                    socket.to(socket.id).emit("error", '권한 거부');
+                }
+            });
                 
             //채팅 보내기 이벤트
             socket.on("send_message", async (msg, roomName, done) => {
@@ -86,7 +110,7 @@ module.exports = (httpserver, sessionMiddleware) => {
                 if(roomsOfUser.includes(roomName)){
                     const account = await userInfo.getAccount(session.userId);
                     const nickname = await userInfo.getNickname(session.userId);
-                    let filtered_msg = filter.KMP(msg);
+                    let filtered_msg = filter.filterSentence(msg);
                     socket.to(roomName).emit("new_message", filtered_msg, account, nickname);
                     done();
                 }

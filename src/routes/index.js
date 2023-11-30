@@ -1,10 +1,8 @@
 const express = require('express');
-const User = require('../../models/user');
-const Account = require('../../models/account');
 const LoginSystem = require("../login/loginSystem.js");
-const crypto = require("../util/crypto");
 const path = require('path');
 const socket = require("../socket/socket.js");
+const info = require('../util/info.js');
 const router = express.Router();
 
 //로그인
@@ -25,7 +23,8 @@ router.post("/signin", async (req, res)=>{
         if (req.session.isLogined == false || req.session.isLogined == null) {
              if(execute != -1){
                     console.log(id + "님이 로그인하셨습니다.");
-                    const nickname = await module.GetInformation(execute);
+                    const nickname = await info.getNickname(execute);
+                    const accountId = await info.getAccount(execute);
 
                     req.session.userId = execute;
                     req.session.isLogined = true;
@@ -39,7 +38,7 @@ router.post("/signin", async (req, res)=>{
                         else {
                             res.status(200).json({
                                 msg: 'successful login',
-                                userId : execute,
+                                accountId : accountId,
                                 nickname : nickname
                             });
                             return;
