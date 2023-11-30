@@ -108,6 +108,7 @@ module.exports = (httpserver, sessionMiddleware) => {
                                 list.forEach((socket) => socket.leave(roomName));
                                 result(true);
                                 const nickname = userInfo.getNickname(userId);
+                                console.log(nickname + " (" + accountId + ") 님이 " + roomName + "에서 강퇴당하셨습니다.")
                                 socket.to(roomName).emit("kicked", nickname);
                             }
                             else{
