@@ -2,6 +2,7 @@ const express = require('express');
 const User = require('../../models/user');
 const Account = require('../../models/account');
 const crypto = require("../util/crypto");
+const info = require("../util/info");
 const path = require('path');
 
 const router = express.Router();
@@ -17,31 +18,22 @@ router.get('/info', async (req, res) => {
             return;
         }
 
-        const user = await User.findOne({
-            where : {
-                id : handle
-            }
-        });
+        const account = await info.getAccount(handle);
+        console.log(account);
 
         //없는 계정인 경우
-        if(user == null){
-            res.status(400).json({msg: 'Non User' });
+        if(account == null){
+            res.status(400).json({msg: 'Non User'});
             return;
         }
 
-        const account = await Account.findOne({
-            where : {
-                userId : handle
-            }
-        });
-
-        const decryptedId = crypto.decipher(account.dataValues.id);
+        const nickname = await info.getNickname(handle);
 
         res.status(200).json({
             msg: 'successful getInformation',
             userId : handle,
-            accountId : decryptedId,
-            nickname : user.nickname
+            accountId : account,
+            nickname : nickname
         });
 
     } catch (error) {

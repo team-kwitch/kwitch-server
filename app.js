@@ -2,11 +2,11 @@ const dotenv = require('dotenv');
 const express = require('express');
 const bodyParser = require('body-parser');
 const session = require('express-session');   
-const passport = require('passport');   
+const passport = require('passport');
+const Room = require('./models/room.js');
 const http = require('http');
 const socket = require('./src/socket/socket.js');           
 const MySQLStore = require('express-mysql-session')(session);
-const Room = require('./models/room.js');
 dotenv.config();
 
 const {sequelize} = require('./models');
@@ -59,6 +59,7 @@ app.post("/test", (req, res) => {
 });
 
 const httpserver = http.createServer(app);
+
 const webSocket = socket(httpserver, sessionMiddleware);
 
 httpserver.listen(app.get('port'), async() => {
@@ -74,11 +75,11 @@ httpserver.listen(app.get('port'), async() => {
     await Room.destroy({
         where: {},
         truncate: true
-      })
+        })
         .then(() => {
-          console.log('Room 테이블의 모든 데이터가 정상적으로 삭제되었습니다.');
+            console.log('Room 테이블의 모든 데이터가 정상적으로 삭제되었습니다.');
         })
         .catch((error) => {
-          console.error('데이터 삭제 중 오류 발생:', error);
+            console.error('데이터 삭제 중 오류 발생:', error);
         });
 });

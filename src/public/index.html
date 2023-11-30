@@ -84,9 +84,11 @@
 
     function kick(){
         const input = document.getElementById("kick").value;
+        const roomName = document.getElementById("createName").value;
+        if(roomName == null) roomName = document.getElementById("roomName").value;
         console.log(input);
 
-        socket.emit('kick', input, (result) => {
+        socket.emit('kick', input, roomName, (result) => {
             const room = document.getElementById("home");
             room.textContent = input + " 내보내기 성공!!";
         });
@@ -101,22 +103,20 @@
 
     function chat(){
         var value = document.querySelector('#chat').value
-        socket.emit("send_message", value, document.getElementById("roomName").value, () => {
-            addMessage(value, 0);
+        socket.emit("send_message", value, document.getElementById("roomName").value, (ok) => {
+            if(ok == true) addMessage(value, 0);
         });
     }
 
     socket.on("chatting_enter", (id)=>{
-        console.log(id + "님이 로그인 하셨습니다.");
+        addMessage(id + "님이 들어왔습니다.", 1);
     });
 
     socket.on("bye", (id) => {
-        alert(id + "님이 나갔습니다.");
-        console.log(id + "님이 나갔습니다.");
+        addMessage(id + "님이 나갔습니다.", 1);
     });
 
     socket.on("new_message", (msg, account, nickname)=>{
-        alert(msg);
         addMessage(nickname + "(" + account + ")" + " : " + msg, 1);
     });
 

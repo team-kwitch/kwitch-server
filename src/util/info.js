@@ -3,28 +3,22 @@ const Account = require('../../models/account');
 const Room = require('../../models/room');
 const crypto = require("./crypto");
 
-async function getInfo(userId){
+async function getAccount(userId){
     try{
         const account = await Account.findOne({
             where : {
                 userId : userId
             }
         });
-    
-        const user = await User.findOne({
-            where : {
-                id : userId
-            }
-        });
-    
+        
+        if(account == null) return null;
         const decryptedId = crypto.decipher(account.dataValues.id); 
     
-        console.log(decryptedId + " " + user.nickname);
-        return { account : decryptedId, nickname : user.nickname};
+        return decryptedId;
     }
     catch(err){
         console.log(err);
-        return { account : null, nickname : null};
+        return null;
     }
 }
 
@@ -39,13 +33,30 @@ async function getUserId(accountId){
         });
         
         if(account == null) return -1;
-        return account.dataValues.id;
+        return account.UserId;
     }
     catch(err){
         console.log(err);
         return -1;
     }
 }
+
+async function getNickname(userId){
+    try{
+        const user = await User.findOne({
+            where : {
+                id : userId
+            }
+        });
+        
+        if(user == null) return null;
+        return user.nickname;
+    }
+    catch(err){
+        console.log(err);
+        return null;
+    }
+} 
 
 async function setRoomTitle(roomName, title){
     try{
@@ -56,4 +67,4 @@ async function setRoomTitle(roomName, title){
     }
 }
 
-module.exports = {getInfo, getUserId, setRoomTitle};
+module.exports = {getAccount, getUserId, getNickname, setRoomTitle};

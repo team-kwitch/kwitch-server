@@ -11,6 +11,7 @@ class LoginSystem{
 
     async Register(nickname){
         const cryptedId = await cryptoModule.cipher(this._id);
+        if(nickname == null) nickname = "끼얏호우";
         
         const exist = await Account.findOne({
             where:{

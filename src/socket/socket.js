@@ -37,77 +37,110 @@ module.exports = (httpserver, sessionMiddleware) => {
     const roomRoles = {};
     
     wsServer.on("connection", (socket) => {
-        console.log("연결!!");
+        console.log(socket.id + "의 연결 감지!!");
         const session = socket.request.session;
         if(session.isLogined == true){
-            socket.on("enter_room", (roomName) => {
-                if(wsServer.sockets.adapter.rooms.get(roomName)){
+            //방 입장하기 이벤트
+            socket.on("enter_room", (roomName, done) => {
+                const roomsOfUser = Array.from(socket.rooms);
+                if(wsServer.sockets.adapter.rooms.get(roomName) && !roomsOfUser.includes(roomName)){
                     console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
                     socket['userId'] = session.userId;
                     socket.join(roomName);
+                    done(true);
                     socket.to(roomName).emit("chatting_enter", session.userId);
                     wsServer.sockets.emit("room_change", publicRooms());
                 }
                 else{
-                    wsServer.to(socket.id).emit("no_room", 'no room');
+                    done(false);
                 }
             });
-            socket.on("create_room", async(roomName, title) => {
-                if(!wsServer.sockets.adapter.rooms.get(roomName)){
+
+            //방 만들기 이벤트
+            socket.on("create_room", async(roomName, title, done) => {
+                const roomsOfUser = Array.from(socket.rooms);
+                if(!wsServer.sockets.adapter.rooms.get(roomName) && !roomsOfUser.includes(roomName)){
                     console.log(session.userId + "님이 " + roomName + "방을 생성합니다.");
                     socket['userId'] = session.userId;
                     if(!roomRoles[roomName]){
                         roomRoles[roomName] = {};
                     }
-                    roomRoles[roomName][session.userId] = {role : 'leader'};
+                    roomRoles[roomName] = {leader : session.userId, manager : []};
                     await userInfo.setRoomTitle(roomName, title);
-                    console.log(roomRoles);
                     socket.join(roomName);
-                    socket.to(roomName).emit("chatting_enter", session.userId);
+                    const nickname = await userInfo.getNickname(session.userId);
+                    done(true);
+                    socket.to(roomName).emit("chatting_enter", nickname);
                     wsServer.sockets.emit("room_change", publicRooms());
                 }
                 else{
-                    wsServer.to(socket.id).emit("no_room", 'Existing room');
+                    done(false);
                 }
             });
-            socket.on("disconnecting", () => {
-                socket.rooms.forEach(room => socket.to(room).emit("bye"));
-                wsServer.sockets.emit("room_change", publicRooms());
+
+            //방 삭제하기 이벤트
+                
+            //채팅 보내기 이벤트
+            socket.on("send_message", async (msg, roomName, done) => {
+                const roomsOfUser = Array.from(socket.rooms);
+                if(roomsOfUser.includes(roomName)){
+                    const account = await userInfo.getAccount(session.userId);
+                    const nickname = await userInfo.getNickname(session.userId);
+                    let filtered_msg = filter.KMP(msg);
+                    socket.to(roomName).emit("new_message", filtered_msg, account, nickname);
+                    done();
+                }
             });
-            socket.on("disconnect", () => {
-                wsServer.sockets.emit("room_change", publicRooms());
+            
+            //특정 유저 강퇴 이벤트
+            socket.on("kick", async (accountId, roomName, result) => {
+                try{
+                    const checkroom = roomRoles[roomName];
+                    if(checkroom){
+                        //그 방의 방장이나 매니저만 권한이 있음
+                        if(checkroom.leader == session.userId || checkroom.manager.includes(session.userId)){
+                            //강퇴할 유저의 아이디를 바탕으로 userId를 얻어옴
+                            const userId = await userInfo.getUserId(accountId);
+                            if(userId != -1 && userId != null){
+                                const list = Array.from(wsServer.sockets.sockets.values()).filter(
+                                    (socket) => socket["userId"] == userId
+                                );
+                                list.forEach((socket) => socket.leave(roomName));
+                                result(true);
+                                const nickname = userInfo.getNickname(userId);
+                                socket.to(roomName).emit("kicked", nickname);
+                            }
+                            else{
+                                result(false);
+                            }
+                        }
+                    }
+                    else{
+                        socket.to(socket.id).emit("error", '권한 거부');
+                    }
+                }
+                catch(err){
+                    console.log(err);
+                    socket.to(socket.id).emit("error", '권한 거부');
+                }
             });
+
+            //WebRTC 전용인가? 몰루?
             socket.on("offer", (offer, roomName) => {
                 socket.to(roomName).emit("offer", offer);
             });
             socket.on("answer", (answer, roomName) => {
                 socket.to(roomName).emit("answer", answer);
             });
-            socket.on("send_message", async (msg, room, done) => {
-                const {account, nickname} = await userInfo.getInfo(session.userId);
-                let filtered_msg = filter.KMP(msg);
-                socket.to(room).emit("new_message", filtered_msg, account, nickname);
-                done();
+            
+            //연결이 끊어지기 직전에 보내는 이벤트
+            socket.on("disconnecting", () => {
+                socket.rooms.forEach(room => socket.to(room).emit("bye"));
+                wsServer.sockets.emit("room_change", publicRooms());
             });
-            socket.on("kick", async (accountId, roomName) => {
-                const checkuser = roomRoles[roomName][session.userId];
-                if(checkuser){
-                    //그 방의 방장이나 매니저만 권한이 있음
-                    if(checkuser.role == 'leader' || checkuser.role == 'manager'){
-                        //강퇴할 유저의 아이디를 바탕으로 userId를 얻어옴
-                        const userId = userInfo.getUserId(accountId);
-                
-                        if(userId != -1 && userId != null){
-                            const list = Array.from(wsServer.sockets.sockets.values()).filter(
-                                (socket) => socket["userId"] == userId
-                            );
-                            list.forEach((socket) => socket.leave(roomName));
-                        }
-                    }
-                }
-                else{
-                    socket.to(socket.id).emit("error", '권한 거부');
-                }
+            //연결이 완전히 끊긴 후 보내는 이벤트
+            socket.on("disconnect", () => {
+                wsServer.sockets.emit("room_change", publicRooms());
             });
         }
     });

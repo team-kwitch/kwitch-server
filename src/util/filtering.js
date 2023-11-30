@@ -15,7 +15,7 @@ function makeTable(P){
 }
 
 function KMP(T){
-    const filter = ["씨발", "병신", "좇", "개새끼", "새끼"];
+    const filter = ["씨발", "병신", "좇", "개새끼", "새끼", "ㅅㅂ", "ㅄ", "ㅂㅅ", "ㄳㄲ", "ㄱㅅㄲ", "시발"];
 
     for(let k = 0; k<filter.length; k++){
         const P = filter[k];
