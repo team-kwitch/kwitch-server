@@ -45,16 +45,18 @@ module.exports = (httpserver, sessionMiddleware) => {
                     console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
                     socket['userId'] = session.userId;
                     socket.join(roomName);
-                    socket.to(roomName).emit("chatting_enter", session.userId);
+                    //socket.to(roomName).emit("chatting_enter", session.userId);
+                    socket.to(roomName).emit("welcome");
                     wsServer.sockets.emit("room_change", publicRooms());
                 }
                 else{
                     wsServer.to(socket.id).emit("no_room", 'no room');
+                    console.log("exit enter_room");
                 }
             });
             socket.on("create_room", async(roomName, title) => {
                 if(!wsServer.sockets.adapter.rooms.get(roomName)){
-                    console.log(session.userId + "님이 " + roomName + "방을 생성합니다.");
+                    console.log(session.userId + "님이 " + roomName + "방을 생성합니다." + title);
                     socket['userId'] = session.userId;
                     if(!roomRoles[roomName]){
                         roomRoles[roomName] = {};
@@ -63,11 +65,15 @@ module.exports = (httpserver, sessionMiddleware) => {
                     await userInfo.setRoomTitle(roomName, title);
                     console.log(roomRoles);
                     socket.join(roomName);
-                    socket.to(roomName).emit("chatting_enter", session.userId);
+                    console.log(socket.rooms);
+                    //socket.to(roomName).emit("chatting_enter", session.userId);
+                    socket.to(roomName).emit("welcome");
+                    console.log(roomName + "welcome");
                     wsServer.sockets.emit("room_change", publicRooms());
                 }
                 else{
                     wsServer.to(socket.id).emit("no_room", 'Existing room');
+                    console.log("exit");
                 }
             });
             socket.on("disconnecting", () => {
