@@ -44,6 +44,7 @@ module.exports = (httpserver, sessionMiddleware) => {
             //방 입장하기 이벤트
             socket.on("enter_room", (roomName, done) => {
                 const roomsOfUser = Array.from(socket.rooms);
+                wsServer.emit("destroy_room", roomName);
                 if(wsServer.sockets.adapter.rooms.get(roomName) && !roomsOfUser.includes(roomName)){
                     console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
                     socket['userId'] = session.userId;
@@ -81,6 +82,7 @@ module.exports = (httpserver, sessionMiddleware) => {
 
             //방 삭제하기 이벤트
             socket.on("destroy_room", async (roomName) =>{
+                console.log("끼얏호우");
                 try{
                     const checkroom = roomRoles[roomName];
                     const room = await Room.findOne({
@@ -89,7 +91,7 @@ module.exports = (httpserver, sessionMiddleware) => {
                     if(room != null){
                         //그 방의 방장에게만 방송 종료 권한이 있음
                         if(checkroom.leader == session.userId){
-                            sockets.clients(roomName).forEach(function(s){
+                            wsServer.sockets.clients(roomName).forEach(function(s){
                                 s.leave(roomName);
                             });
                             socket.leave(roomName);
@@ -160,7 +162,29 @@ module.exports = (httpserver, sessionMiddleware) => {
             
             //연결이 끊어지기 직전에 보내는 이벤트
             socket.on("disconnecting", () => {
-                socket.rooms.forEach(room => socket.to(room).emit("bye"));
+                socket.rooms.forEach(async (roomName) => {
+                    socket.to(roomName).emit("bye");
+                    try{
+                        const checkroom = roomRoles[roomName];
+                        const room = await Room.findOne({
+                            name : roomName
+                        });
+                        if(room != null){
+                            //나간 사람이 방장일때만 종료
+                            if(checkroom.leader == session.userId){
+                                wsServer.sockets.clients(roomName).forEach(function(s){
+                                    s.leave(roomName);
+                                });
+                                socket.leave(roomName);
+                                console.log(roomName + "방송이 비정상적으로 종료되었습니다");
+                                await room.destroy();
+                            }
+                        }
+                    }
+                    catch(err){
+                        console.log(err);
+                    }
+                });
                 wsServer.sockets.emit("room_change", publicRooms());
             });
             //연결이 완전히 끊긴 후 보내는 이벤트
