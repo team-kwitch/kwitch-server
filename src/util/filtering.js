@@ -39,16 +39,18 @@ function KMP(T, P){
     return list;
 }
 
-function filterSentence(string){
+function filterSentence(T){
     for(let i = 0; i<filter.length; i++){
-        list = KMP(string, filter[i]);
+        list = KMP(T, filter[i]);
 
         for (let idx of list) {
-            for (let i = idx; i < P.length + idx; i++) {
+            for (let i = idx; i < filter[i].length + idx; i++) {
                 T = T.substring(0, i) + '*' + T.substring(i + 1);
             }
         }
     }
+
+    return T
 }
 
 function checkAbuse(string){
@@ -61,4 +63,4 @@ function checkAbuse(string){
     return false;
 }
 
-module.exports = {checkAbuse, filter};
+module.exports = {checkAbuse, filterSentence};
