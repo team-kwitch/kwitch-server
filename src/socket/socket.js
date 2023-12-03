@@ -84,19 +84,20 @@ module.exports = (httpserver, sessionMiddleware) => {
             socket.on("destroy_room", async (roomName) =>{
                 console.log("끼얏호우");
                 try{
-                    const checkroom = roomRoles[roomName];
-                    const room = await Room.findOne({
-                        name : roomName
-                    });
-                    if(room != null){
-                        //그 방의 방장에게만 방송 종료 권한이 있음
-                        if(checkroom.leader == session.userId){
-                            wsServer.sockets.clients(roomName).forEach(function(s){
-                                s.leave(roomName);
-                            });
-                            socket.leave(roomName);
-                            console.log(roomName + "방송이 종료되었습니다");
-                            await room.destroy();
+                    if(roomName in roomRoles){
+                        const checkroom = roomRoles[roomName];
+                        const room = await Room.findOne({
+                            name : roomName
+                        });
+                        console.log(checkroom);
+                        if(room != null){
+                            //나간 사람이 방장일때만 종료
+                            if(checkroom.leader == session.userId){
+                                wsServer.in(roomName).socketsLeave(roomName);
+                                socket.leave(roomName);
+                                console.log(roomName + "방송이 종료되었습니다");
+                                await room.destroy();
+                            }
                         }
                     }
                 }
@@ -165,19 +166,21 @@ module.exports = (httpserver, sessionMiddleware) => {
                 socket.rooms.forEach(async (roomName) => {
                     socket.to(roomName).emit("bye");
                     try{
-                        const checkroom = roomRoles[roomName];
-                        const room = await Room.findOne({
-                            name : roomName
-                        });
-                        if(room != null){
-                            //나간 사람이 방장일때만 종료
-                            if(checkroom.leader == session.userId){
-                                wsServer.sockets.clients(roomName).forEach(function(s){
-                                    s.leave(roomName);
-                                });
-                                socket.leave(roomName);
-                                console.log(roomName + "방송이 비정상적으로 종료되었습니다");
-                                await room.destroy();
+                        if(roomName in roomRoles){
+                            const checkroom = roomRoles[roomName];
+                            const room = await Room.findOne({
+                                name : roomName
+                            });
+                            console.log(checkroom);
+                            if(room != null){
+                                //나간 사람이 방장일때만 종료
+                                if(checkroom.leader == session.userId){
+                                    wsServer.in(roomName).socketsLeave(roomName);
+                                    socket.leave(roomName);
+                                    console.log(roomName + "방송이 비정상적으로 종료되었습니다");
+                                    await room.destroy();
+
+                                }
                             }
                         }
                     }
