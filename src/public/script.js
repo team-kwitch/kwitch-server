@@ -210,20 +210,12 @@ function handleAddStream(data){
     myPeer.srcObject = data.streams[0];
 }
 
-const button = document.getElementById("link");
-function create(){
-    const input = document.getElementById("createName").value;
-    console.log(input);
-
-    socket.emit('create_room', input, "재밌겠다");
-}
-
 socket.on("welcome", async () => {
     console.log("welcome");
     const offer = await myPeerConnection.createOffer();
     h2.innerText = `Room ${roomName}`;
     myPeerConnection.setLocalDescription(offer);
-    console.log("send offer");
+    console.log("send offer" + roomName);
     socket.emit("offer", offer, roomName);
 });
 

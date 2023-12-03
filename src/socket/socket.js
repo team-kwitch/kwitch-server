@@ -49,12 +49,13 @@ module.exports = (httpserver, sessionMiddleware) => {
                     console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
                     socket['userId'] = session.userId;
                     socket.join(roomName);
-                    done(true);
+                    // done(true);
                     socket.to(roomName).emit("chatting_enter", session.userId);
+                    socket.to(roomName).emit("welcome");
                     wsServer.sockets.emit("room_change", publicRooms());
                 }
                 else{
-                    done(false);
+                    // done(false);
                 }
             });
 
@@ -71,12 +72,13 @@ module.exports = (httpserver, sessionMiddleware) => {
                     await userInfo.setRoomTitle(roomName, title);
                     socket.join(roomName);
                     const nickname = await userInfo.getNickname(session.userId);
-                    done(true);
+                    // done(true);
                     socket.to(roomName).emit("chatting_enter", nickname);
+                    socket.to(roomName).emit("welcom");
                     wsServer.sockets.emit("room_change", publicRooms());
                 }
                 else{
-                    done(false);
+                    // done(false);
                 }
             });
 
@@ -160,6 +162,9 @@ module.exports = (httpserver, sessionMiddleware) => {
             socket.on("answer", (answer, roomName) => {
                 socket.to(roomName).emit("answer", answer);
             });
+            socket.on("ice", (ice, roomName) => {
+                socket.to(roomName).emit("ice", ice);
+            })
             
             //연결이 끊어지기 직전에 보내는 이벤트
             socket.on("disconnecting", () => {
