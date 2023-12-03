@@ -12,7 +12,6 @@
         .chatbox {background: #eee; padding: 5px; max-width: 200px;}
         .mine {margin-left: auto;}
     </style>
-    <h1>반갑습니다</h1>
     <h2 id="home">This is Home</h2>
     <div>
         <a>생성하실 채팅방을 써주세용</a>
@@ -34,28 +33,31 @@
         <input id="kick" type="text">
         <button id="chatlink" onclick="kick()">채팅 보내기</button>
     </div>
-    <div>
-        <a>채팅이 보일 공간입니다</a>
-        <br>
-        <div class = "chat">
-        </div>
-
-    </div>
     <div id="room">
         <form>
             <input type = "text">
             <button>Link</button>
         </form>
-        
     </div>
-    <div id="call">
-        <div id="myStream">
-            <video id="myCam" autoplay="true" width="400" height="400"></video>
-            <button id="mute">Mute</button>
-            <button id="cam">Cam</button>
-            <select id="cameras"></select>
+    <div id="call" style="float: left; position: relative; width: 80%; padding-top: 56.25%;">
+        <div id="myStream" style="position: absolute; top: 0; left: 0; bottom: 0; right: 0;">
+            <video id="myCam" autoplay="true" playsinline="true" style="float: left; width: 100%; height: 55%"></video>
+            <video id="myPeer" autoplay="true" playsinline="true" style="float: left; width: 100%; height: 55%"></video>
+            <div>
+                <button id="mute">Mute</button>
+                <button id="media">Media</button>
+                <button id="screen">Cam</button>
+                <select id="cameras"></select>
+            </div>
+            
         </div>
     </div>
+    <div style="float:left; width: 20%;">
+        <br>
+        <div class = "chat">
+        </div>
+    </div>
+    
     <script type="text/javascript" src="/socket.io/socket.io.js"></script>
     <script type="text/javascript" src="script.js"></script>
 </body>

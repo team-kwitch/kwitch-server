@@ -37,7 +37,7 @@ const sessionMiddleware = session({
     }),
     cookie: {
         maxAge : 0
-      }
+    }
 });
 
 app.set('port', 8000);
