@@ -8,6 +8,39 @@ const path = require('path');
 
 const router = express.Router();
 
+router.get('/me', async (req, res) => {
+    try{
+        const handle = req.session.userId
+        
+        //로그인 하지 않았을 경우
+        if(handle == null){
+            res.status(403).json({msg: 'No Authorization' });
+            return;
+        }
+
+        const account = await info.getAccount(handle);
+        console.log(account);
+
+        //없는 계정인 경우
+        if(account == null){
+            res.status(400).json({msg: 'Non User'});
+            return;
+        }
+
+        const nickname = await info.getNickname(handle);
+
+        res.status(200).json({
+            msg: 'successful getInformation',
+            accountId : account,
+            nickname : nickname
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({msg: 'Internal Server Error' });
+    }
+});
+
 //유저 아이디로 세부적인 정보 받아오기
 router.get('/:id', async (req, res) => {
     try{
