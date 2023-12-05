@@ -234,11 +234,13 @@ module.exports = (httpserver, sessionMiddleware) => {
                                 }
                                 list.forEach((socket) => {
                                     socket.leave(roomName);
+                                    //개인에게 너 강퇴당했다고 메시지 띄우는 용도임
                                     wsServer.to(socket.id).emit("ban", roomName);
                                 });
                                 result(true, "Successfully user kicked");
                                 const nickname = await userInfo.getNickname(userId);
-                                console.log(nickname + " (" + accountId + ") 님이 " + roomName + "에서 강퇴당하셨습니다.")
+                                console.log(nickname + " (" + accountId + ") 님이 " + roomName + "에서 강퇴당하셨습니다.");
+                                //모두에게 누가 강퇴당했다고 알리는 것
                                 socket.to(roomName).emit("kicked", nickname, accountId);
                             }
                             else{
