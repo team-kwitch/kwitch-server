@@ -136,6 +136,7 @@ module.exports = (httpserver, sessionMiddleware) => {
             socket.on("give_manager", async(accountId, roomName, result) => {
                 try{
                     const checkroom = roomRoles[roomName];
+                    console.log(checkroom);
                     if(checkroom){
                         if(checkroom.leader == session.userId){
                             const userId = await userInfo.getUserId(accountId);
@@ -149,12 +150,12 @@ module.exports = (httpserver, sessionMiddleware) => {
                                 }
                                 else{
                                     console.log(accountId + "님은 이미 " + roomName + "의 매니저입니다.");
-                                    result(false, accountId + "is already the manager of " + roomName + "'s room");
+                                    result(false, accountId + " is already the manager of " + roomName + "'s room");
                                 }
                             }
                             else{
                                 console.log(accountId + "님은 존재하지 않는 계정입니다.");
-                                result(false, accountId + "is not existing account");
+                                result(false, accountId + " is not existing account");
                             }
                         }
                         else{
@@ -193,16 +194,18 @@ module.exports = (httpserver, sessionMiddleware) => {
                                 }
                                 else{
                                     console.log(accountId + "님은 " + roomName + "의 매니저가 아니라서 해제할 수 없습니다.");
-                                    result(false, accountId + "is not the manager of " + roomName + "'s room");
+                                    result(false, accountId + " is not the manager of " + roomName + "'s room");
                                 }
                             }
                             else{
                                 console.log(accountId + "님은 존재하지 않는 계정입니다.");
-                                result(false, accountId + "is not existing account");
+                                result(false, accountId + " is not existing account");
                             }
                         }
-                        console.log("방장이 아니면 매니저를 뺏을 수 없습니다.");
-                        result(false, "Only the leader of the room can remove manager privileges");
+                        else{
+                            console.log("방장이 아니면 매니저를 뺏을 수 없습니다.");
+                            result(false, "Only the leader of the room can remove manager privileges");
+                        }
                     }
                     else{
                         console.log("존재하지 않는 방입니다.");
@@ -223,13 +226,21 @@ module.exports = (httpserver, sessionMiddleware) => {
                         if(checkroom.leader == session.userId || checkroom.manager.includes(session.userId)){
                             //강퇴할 유저의 아이디를 바탕으로 userId를 얻어옴
                             const userId = await userInfo.getUserId(accountId);
-                            if(userId != -1 && userId != null){
+                            if(userId == socket.session.userId){
+                                console.log("자기 자신을 강퇴할 순 없습니다");
+                                result(false, "You can't kick yourself");
+                            }
+                            else if(checkroom.leader == userId || checkroom.manager.includes(userId)){
+                                console.log("방장이나 다른 매니저를 강퇴할 수 없습니다");
+                                result(false, "You can't kick the leader or the other managers");
+                            }
+                            else if(userId != -1 && userId != null){
                                 const roomsOfUser = Array.from(socket.rooms);
                                 const list = Array.from(wsServer.sockets.sockets.values()).filter(
                                     (socket) => socket["userId"] == userId && roomsOfUser.includes(roomName)
                                 );
                                 if(list.length == 0){
-                                    result(false, accountId + "is not in the " + roomName + "'s room");
+                                    result(false, accountId + " is not in the " + roomName + "'s room");
                                     return;
                                 }
                                 list.forEach((socket) => {
@@ -245,7 +256,7 @@ module.exports = (httpserver, sessionMiddleware) => {
                             }
                             else{
                                 console.log("존재하지 않는 계정입니다.");
-                                result(false, accountId + "is not existing account");
+                                result(false, accountId + " is not existing account");
                             }
                         }
                         else{
@@ -276,7 +287,7 @@ module.exports = (httpserver, sessionMiddleware) => {
             })
             
             //연결이 끊어지기 직전에 보내는 이벤트
-            socket.on("disconnecting", () => {
+            socket.on("disconnecting", async() => {
                 socket.rooms.forEach(async (roomName) => {
                     socket.to(roomName).emit("bye");
                     try{

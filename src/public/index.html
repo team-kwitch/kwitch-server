@@ -78,10 +78,13 @@
         const input = document.getElementById("roomName").value;
         console.log(input);
 
-        socket.emit('enter_room', input, (result) => {
+        socket.emit('enter_room', input, (result, msg) => {
             if(result == true){
                 const room = document.getElementById("home");
                 room.textContent = input + "방에 접속 성공!!";
+            }
+            else{
+                alert(msg);
             }
         });
     }
@@ -91,10 +94,14 @@
         console.log(input);
         roomName = input;
         await initRoom();
-        socket.emit('create_room', input, "재밌겠다", (result) => {
+        socket.emit('create_room', input, "재밌겠다", (result, msg) => {
+            console.log(result);
             if(result == true){
                 const room = document.getElementById("home");
                 room.textContent = input + "방에 생성 및 접속 성공!!";
+            }
+            else{
+                alert(msg);
             }
         });
     }
@@ -105,10 +112,13 @@
         if(roomName == null) roomName = document.getElementById("roomName").value;
         console.log(input);
 
-        socket.emit('kick', input, roomName, (result) => {
+        socket.emit('kick', input, roomName, (result, msg) => {
             if(result){
                 const room = document.getElementById("home");
                 room.textContent = input + " 내보내기 성공!!";
+            }
+            else{
+                alert(msg);
             }
         });
     }
@@ -119,10 +129,13 @@
         if(roomName == null) roomName = document.getElementById("roomName").value;
         console.log(input);
 
-        socket.emit('give_manager', input, roomName, (result) => {
+        socket.emit('give_manager', input, roomName, (result, msg) => {
             if(result){
                 const room = document.getElementById("home");
                 room.textContent = input + " 매니저 주기 성공!!";
+            }
+            else{
+                alert(msg);
             }
         });
     }
@@ -133,10 +146,13 @@
         if(roomName == null) roomName = document.getElementById("roomName").value;
         console.log(input);
 
-        socket.emit('remove_manager', input, roomName, (result) => {
+        socket.emit('remove_manager', input, roomName, (result, msg) => {
             if(result){
                 const room = document.getElementById("home");
                 room.textContent = input + " 매니저 뺏기 성공!!";
+            }
+            else{
+                alert(msg);
             }
         });
     }
@@ -150,8 +166,11 @@
 
     function chat(){
         var value = document.querySelector('#chat').value
-        socket.emit("send_message", value, document.getElementById("roomName").value, (ok) => {
+        socket.emit("send_message", value, document.getElementById("roomName").value, (ok, msg) => {
             if(ok == true) addMessage(value, 0);
+            else{
+                alert(msg);
+            }
         });
     }
 
@@ -176,8 +195,8 @@
         alert(roomName + "에서 강퇴당하셨습니다!!");
     });
 
-    socket.on("bye", (id) => {
-        addMessage(id + "님이 나갔습니다.", 1);
+    socket.on("bye", (account, nickname) => {
+        addMessage(nickname + "(" + account + ")" + "님이 나갔습니다.", 1);
     });
 
     socket.on("new_message", (msg, account, nickname)=>{
