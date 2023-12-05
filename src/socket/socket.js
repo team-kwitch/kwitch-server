@@ -42,20 +42,21 @@ module.exports = (httpserver, sessionMiddleware) => {
         const session = socket.request.session;
         if(session.isLogined == true){
             //방 입장하기 이벤트
-            socket.on("enter_room", (roomName, done) => {
+            socket.on("enter_room", async (roomName, done) => {
                 const roomsOfUser = Array.from(socket.rooms);
                 wsServer.emit("destroy_room", roomName);
                 if(wsServer.sockets.adapter.rooms.get(roomName) && !roomsOfUser.includes(roomName)){
                     console.log(session.userId + "님이 " + roomName + "에 입장합니다.");
                     socket['userId'] = session.userId;
                     socket.join(roomName);
-                    // done(true);
-                    socket.to(roomName).emit("chatting_enter", session.userId);
+                    const nickname = await userInfo.getNickname(session.userId);
+                    done(true);
+                    socket.to(roomName).emit("chatting_enter", nickname);
                     socket.to(roomName).emit("welcome");
                     wsServer.sockets.emit("room_change", publicRooms());
                 }
                 else{
-                    // done(false);
+                    done(false);
                 }
             });
 
@@ -72,19 +73,18 @@ module.exports = (httpserver, sessionMiddleware) => {
                     await userInfo.setRoomTitle(roomName, title);
                     socket.join(roomName);
                     const nickname = await userInfo.getNickname(session.userId);
-                    // done(true);
+                    done(true);
                     socket.to(roomName).emit("chatting_enter", nickname);
                     socket.to(roomName).emit("welcom");
                     wsServer.sockets.emit("room_change", publicRooms());
                 }
                 else{
-                    // done(false);
+                    done(false);
                 }
             });
 
             //방 삭제하기 이벤트
             socket.on("destroy_room", async (roomName) =>{
-                console.log("끼얏호우");
                 try{
                     if(roomName in roomRoles){
                         const checkroom = roomRoles[roomName];
@@ -121,6 +121,88 @@ module.exports = (httpserver, sessionMiddleware) => {
                 }
             });
             
+            //매니저 권한 부여
+            socket.on("give_manager", async(accountId, roomName, result) => {
+                try{
+                    const checkroom = roomRoles[roomName];
+                    if(checkroom){
+                        if(checkroom.leader == session.userId){
+                            const userId = await userInfo.getUserId(accountId);
+                            if(userId != -1 || userId != null){
+                                if(!checkroom.manager.includes(userId)){
+                                    checkroom.manager.push(userId);
+                                    const nickname = await userInfo.getNickname(userId);
+                                    console.log(accountId + "님이 " + roomName + "의 매니저로 임명되었습니다.");
+                                    socket.to(roomName).emit("new_manager", nickname, accountId);
+                                    result(true);
+                                }
+                                else{
+                                    console.log(accountId + "님은 이미 " + roomName + "의 매니저입니다.");
+                                    result(false);
+                                }
+                            }
+                            else{
+                                console.log(accountId + "님은 존재하지 않는 계정입니다.");
+                                result(false);
+                            }
+                        }
+                        else{
+                            console.log("방장이 아니면 매니저를 부여해줄 수 없습니다.");
+                            result(false);
+                        }
+                    }
+                    else{
+                        console.log("존재하지 않는 방입니다.");
+                        result(false);
+                    }
+                }
+                catch(error){
+                    console.log(error);
+                    result(false);
+                }
+            });
+
+            //매니저 권한 뺏기
+            socket.on("remove_manager", async(accountId, roomName, result) => {
+                try{
+                    const checkroom = roomRoles[roomName];
+                    if(checkroom){
+                        if(checkroom.leader == session.userId){
+                            const userId = await userInfo.getUserId(accountId);
+                            if(userId != -1 || userId != null){
+                                if(checkroom.manager.includes(userId)){
+                                    var index = checkroom.manager.indexOf(userId);
+                                    if (index !== -1) {
+                                        checkroom.manager.splice(index, 1);
+                                    }
+                                    const nickname = await userInfo.getNickname(userId);
+                                    console.log(accountId + "님이 " + roomName + "의 매니저가 더이상 아닙니다.");
+                                    socket.to(roomName).emit("new_manager", nickname, accountId);
+                                    result(true);
+                                }
+                                else{
+                                    console.log(accountId + "님은 " + roomName + "의 매니저가 아니라서 해제할 수 없습니다.");
+                                    result(false);
+                                }
+                            }
+                            else{
+                                console.log(accountId + "님은 존재하지 않는 계정입니다.");
+                                result(false);
+                            }
+                        }
+                        console.log("방장이 아니면 매니저를 뺏을 수 없습니다.");
+                        result(false);
+                    }
+                    else{
+                        console.log("존재하지 않는 방입니다.");
+                        result(false);
+                    }
+                }
+                catch(error){
+                    console.log(error);
+                    result(false);
+                }
+            });
             //특정 유저 강퇴 이벤트
             socket.on("kick", async (accountId, roomName, result) => {
                 try{
@@ -136,7 +218,7 @@ module.exports = (httpserver, sessionMiddleware) => {
                                 );
                                 list.forEach((socket) => socket.leave(roomName));
                                 result(true);
-                                const nickname = userInfo.getNickname(userId);
+                                const nickname = await userInfo.getNickname(userId);
                                 console.log(nickname + " (" + accountId + ") 님이 " + roomName + "에서 강퇴당하셨습니다.")
                                 socket.to(roomName).emit("kicked", nickname);
                             }

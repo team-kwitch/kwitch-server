@@ -69,8 +69,10 @@
         console.log(input);
 
         socket.emit('enter_room', input, (result) => {
-            const room = document.getElementById("home");
-            room.textContent = input + "방에 접속 성공!!";
+            if(result == true){
+                const room = document.getElementById("home");
+                room.textContent = input + "방에 접속 성공!!";
+            }
         });
     }
 
@@ -80,8 +82,10 @@
         roomName = input;
         await initRoom();
         socket.emit('create_room', input, "재밌겠다", (result) => {
-            const room = document.getElementById("home");
-            room.textContent = input + "방에 생성 및 접속 성공!!";
+            if(result == true){
+                const room = document.getElementById("home");
+                room.textContent = input + "방에 생성 및 접속 성공!!";
+            }
         });
     }
 
