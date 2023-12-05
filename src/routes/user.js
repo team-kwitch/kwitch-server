@@ -9,30 +9,31 @@ const path = require('path');
 const router = express.Router();
 
 //유저 아이디로 세부적인 정보 받아오기
-router.get('/info', async (req, res) => {
+router.get('/:id', async (req, res) => {
     try{
-        const handle = req.session.userId;
+        const handle = req.params.id;
+        // const handle = req.session.userId
         
         //로그인 하지 않았을 경우
-        if(handle == null){
-            res.status(403).json({msg: 'No Authorization' });
-            return;
-        }
+        // if(handle == null){
+        //     res.status(403).json({msg: 'No Authorization' });
+        //     return;
+        // }
 
-        const account = await info.getAccount(handle);
-        console.log(account);
+        const userId = await info.getUserId(handle);
+        console.log(userId);
 
         //없는 계정인 경우
-        if(account == null){
+        if(userId == null){
             res.status(400).json({msg: 'Non User'});
             return;
         }
 
-        const nickname = await info.getNickname(handle);
+        const nickname = await info.getNickname(userId);
 
         res.status(200).json({
             msg: 'successful getInformation',
-            accountId : account,
+            accountId : handle,
             nickname : nickname
         });
 
@@ -42,8 +43,9 @@ router.get('/info', async (req, res) => {
     }
 });
 
-router.put('/modify', async (req, res) => {
+router.put('/:id', async (req, res) => {
     try{
+        const query = req.params.id;
         const handle = req.session.userId;
         
         //로그인 하지 않았을 경우
@@ -67,7 +69,7 @@ router.put('/modify', async (req, res) => {
         }
 
         //로그인한 유저와 일치하지 않는 경우
-        if(req.session.userId != handle){
+        if(query != handle){
             res.status(403).json({msg: 'No Authorization' });
             return;
         }

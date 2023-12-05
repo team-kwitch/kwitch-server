@@ -70,7 +70,7 @@ module.exports = (httpserver, sessionMiddleware) => {
                         roomRoles[roomName] = {};
                     }
                     roomRoles[roomName] = {leader : session.userId, manager : []};
-                    await userInfo.setRoomTitle(roomName, title);
+                    await userInfo.createRoom(roomName, title, session.userId);
                     socket.join(roomName);
                     const nickname = await userInfo.getNickname(session.userId);
                     done(true);
@@ -79,6 +79,7 @@ module.exports = (httpserver, sessionMiddleware) => {
                     wsServer.sockets.emit("room_change", publicRooms());
                 }
                 else{
+                    console.log(roomName + "은 이미 존재하는 방입니다.");
                     done(false);
                 }
             });
@@ -228,12 +229,12 @@ module.exports = (httpserver, sessionMiddleware) => {
                         }
                     }
                     else{
-                        socket.to(socket.id).emit("error", '권한 거부');
+                        result(false);
                     }
                 }
                 catch(err){
                     console.log(err);
-                    socket.to(socket.id).emit("error", '권한 거부');
+                    result(false);
                 }
             });
 

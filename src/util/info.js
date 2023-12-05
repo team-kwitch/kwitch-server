@@ -58,13 +58,13 @@ async function getNickname(userId){
     }
 } 
 
-async function setRoomTitle(roomName, title){
+async function createRoom(roomName, title, leader){
     try{
-        const room = await Room.create({name:roomName, title:title});
+        const room = await Room.create({name:roomName, title:title, leader:leader});
     }
     catch(err){
         console.log(err);
     }
 }
 
-module.exports = {getAccount, getUserId, getNickname, setRoomTitle};
+module.exports = {getAccount, getUserId, getNickname, createRoom};

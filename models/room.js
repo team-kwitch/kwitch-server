@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 
-module.exports = class Account extends Sequelize.Model{
+module.exports = class Room extends Sequelize.Model{
     static init(sequelize) {
         return super.init({
             name: {
@@ -13,6 +13,10 @@ module.exports = class Account extends Sequelize.Model{
                 allowNull: false,
                 defaultValue : "방송"
             },
+            leader:{
+                type: Sequelize.INTEGER(100),
+                primaryKey: true,
+            }
         },
             {
                 sequelize,
