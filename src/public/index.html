@@ -33,6 +33,16 @@
         <input id="kick" type="text">
         <button id="chatlink" onclick="kick()">채팅 보내기</button>
     </div>
+    <div>
+        <a>매니저 줄 유저를 써주세용</a>
+        <input id="give" type="text">
+        <button id="chatlink" onclick="givemanager()">채팅 보내기</button>
+    </div>
+    <div>
+        <a>매니저를 뺏을 유저를 써주세용</a>
+        <input id="remove" type="text">
+        <button id="chatlink" onclick="removemanager()">채팅 보내기</button>
+    </div>
     <div id="room">
         <form>
             <input type = "text">
@@ -96,8 +106,38 @@
         console.log(input);
 
         socket.emit('kick', input, roomName, (result) => {
-            const room = document.getElementById("home");
-            room.textContent = input + " 내보내기 성공!!";
+            if(result){
+                const room = document.getElementById("home");
+                room.textContent = input + " 내보내기 성공!!";
+            }
+        });
+    }
+
+    function givemanager(){
+        const input = document.getElementById("give").value;
+        const roomName = document.getElementById("createName").value;
+        if(roomName == null) roomName = document.getElementById("roomName").value;
+        console.log(input);
+
+        socket.emit('give_manager', input, roomName, (result) => {
+            if(result){
+                const room = document.getElementById("home");
+                room.textContent = input + " 매니저 주기 성공!!";
+            }
+        });
+    }
+
+    function removemanager(){
+        const input = document.getElementById("remove").value;
+        const roomName = document.getElementById("createName").value;
+        if(roomName == null) roomName = document.getElementById("roomName").value;
+        console.log(input);
+
+        socket.emit('remove_manager', input, roomName, (result) => {
+            if(result){
+                const room = document.getElementById("home");
+                room.textContent = input + " 매니저 뺏기 성공!!";
+            }
         });
     }
 
@@ -117,6 +157,23 @@
 
     socket.on("chatting_enter", (id)=>{
         addMessage(id + "님이 들어왔습니다.", 1);
+    });
+
+    socket.on("delete_manager", (nickname, accountId) => {
+        addMessage(nickname + "(" + accountId + ")는 매니저가 아니지롱.", 1);
+    });
+
+    socket.on("new_manager", (nickname, accountId) => {
+        addMessage(nickname + "(" + accountId + ")가 매니저가 되버려써.", 1);
+    });
+
+    socket.on("kicked", (nickname, accountId) => {
+        addMessage(nickname + "(" + accountId + ")는 강퇴당해 버려써.", 1);
+    });
+    
+    socket.on("ban", (roomName) =>{
+        addMessage("저 개새끼", 1);
+        alert(roomName + "에서 강퇴당하셨습니다!!");
     });
 
     socket.on("bye", (id) => {

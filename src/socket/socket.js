@@ -178,7 +178,7 @@ module.exports = (httpserver, sessionMiddleware) => {
                                     }
                                     const nickname = await userInfo.getNickname(userId);
                                     console.log(accountId + "님이 " + roomName + "의 매니저가 더이상 아닙니다.");
-                                    socket.to(roomName).emit("new_manager", nickname, accountId);
+                                    socket.to(roomName).emit("delete_manager", nickname, accountId);
                                     result(true);
                                 }
                                 else{
@@ -217,11 +217,14 @@ module.exports = (httpserver, sessionMiddleware) => {
                                 const list = Array.from(wsServer.sockets.sockets.values()).filter(
                                     (socket) => socket["userId"] == userId
                                 );
-                                list.forEach((socket) => socket.leave(roomName));
+                                list.forEach((socket) => {
+                                    socket.leave(roomName);
+                                    wsServer.to(socket.id).emit("ban", roomName);
+                                });
                                 result(true);
                                 const nickname = await userInfo.getNickname(userId);
                                 console.log(nickname + " (" + accountId + ") 님이 " + roomName + "에서 강퇴당하셨습니다.")
-                                socket.to(roomName).emit("kicked", nickname);
+                                socket.to(roomName).emit("kicked", nickname, accountId);
                             }
                             else{
                                 result(false);
