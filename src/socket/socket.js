@@ -42,7 +42,7 @@ module.exports = (httpserver, sessionMiddleware) => {
         const session = socket.request.session;
         if(session.isLogined == true){
             //방 입장하기 이벤트
-            socket.on("enter_room", async (roomName, done) => {
+            socket.on("enter_room", async (roomName, result) => {
                 const roomsOfUser = Array.from(socket.rooms);
                 wsServer.emit("destroy_room", roomName);
                 if(wsServer.sockets.adapter.rooms.get(roomName) && !roomsOfUser.includes(roomName)){
@@ -50,18 +50,18 @@ module.exports = (httpserver, sessionMiddleware) => {
                     socket['userId'] = session.userId;
                     socket.join(roomName);
                     const nickname = await userInfo.getNickname(session.userId);
-                    done(true);
+                    result(true, "Successfully joined room");
                     socket.to(roomName).emit("chatting_enter", nickname);
                     socket.to(roomName).emit("welcome");
                     wsServer.sockets.emit("room_change", publicRooms());
                 }
                 else{
-                    done(false);
+                    result(false, "The streamer is offline");
                 }
             });
 
             //방 만들기 이벤트
-            socket.on("create_room", async(roomName, title, done) => {
+            socket.on("create_room", async(roomName, title, result) => {
                 const roomsOfUser = Array.from(socket.rooms);
                 if(!wsServer.sockets.adapter.rooms.get(roomName) && !roomsOfUser.includes(roomName)){
                     console.log(session.userId + "님이 " + roomName + "방을 생성합니다.");
@@ -70,22 +70,22 @@ module.exports = (httpserver, sessionMiddleware) => {
                         roomRoles[roomName] = {};
                     }
                     roomRoles[roomName] = {leader : session.userId, manager : []};
-                    await userInfo.createRoom(roomName, title, session.userId);
                     socket.join(roomName);
+                    await userInfo.createRoom(roomName, title, session.userId);
                     const nickname = await userInfo.getNickname(session.userId);
-                    done(true);
+                    result(true, "Succesfully room created");
                     socket.to(roomName).emit("chatting_enter", nickname);
                     socket.to(roomName).emit("welcom");
                     wsServer.sockets.emit("room_change", publicRooms());
                 }
                 else{
                     console.log(roomName + "은 이미 존재하는 방입니다.");
-                    done(false);
+                    result(false, "You already have a room");
                 }
             });
 
             //방 삭제하기 이벤트
-            socket.on("destroy_room", async (roomName) =>{
+            socket.on("destroy_room", async (roomName, result) =>{
                 try{
                     if(roomName in roomRoles){
                         const checkroom = roomRoles[roomName];
@@ -100,25 +100,35 @@ module.exports = (httpserver, sessionMiddleware) => {
                                 socket.leave(roomName);
                                 console.log(roomName + "방송이 종료되었습니다");
                                 await room.destroy();
+                                result(true, "Succesfully room destroyed");
                             }
                         }
+                        else{
+                            result(false, "The room doesn't exist");
+                        }
+                    }
+                    else{
+                        result(false, "The room leader only can destroy room");
                     }
                 }
                 catch(err){
                     console.log(err);
-                    socket.to(socket.id).emit("error", '권한 거부');
+                    result(false, "Internal server error");
                 }
             });
                 
             //채팅 보내기 이벤트
-            socket.on("send_message", async (msg, roomName, done) => {
+            socket.on("send_message", async (msg, roomName, result) => {
                 const roomsOfUser = Array.from(socket.rooms);
                 if(roomsOfUser.includes(roomName)){
                     const account = await userInfo.getAccount(session.userId);
                     const nickname = await userInfo.getNickname(session.userId);
                     let filtered_msg = filter.filterSentence(msg);
                     socket.to(roomName).emit("new_message", filtered_msg, account, nickname);
-                    done();
+                    result(true, "Succesfully message sent");
+                }
+                else{
+                    result(false, "You are not in the " + roomName + "'s room");
                 }
             });
             
@@ -135,31 +145,31 @@ module.exports = (httpserver, sessionMiddleware) => {
                                     const nickname = await userInfo.getNickname(userId);
                                     console.log(accountId + "님이 " + roomName + "의 매니저로 임명되었습니다.");
                                     socket.to(roomName).emit("new_manager", nickname, accountId);
-                                    result(true);
+                                    result(true, "Successfully manager privileges have been granted");
                                 }
                                 else{
                                     console.log(accountId + "님은 이미 " + roomName + "의 매니저입니다.");
-                                    result(false);
+                                    result(false, accountId + "is already the manager of " + roomName + "'s room");
                                 }
                             }
                             else{
                                 console.log(accountId + "님은 존재하지 않는 계정입니다.");
-                                result(false);
+                                result(false, accountId + "is not existing account");
                             }
                         }
                         else{
                             console.log("방장이 아니면 매니저를 부여해줄 수 없습니다.");
-                            result(false);
+                            result(false, "Only the leader of the room can grant manager privileges");
                         }
                     }
                     else{
                         console.log("존재하지 않는 방입니다.");
-                        result(false);
+                        result(false, "The room doesn't exist");
                     }
                 }
                 catch(error){
                     console.log(error);
-                    result(false);
+                    result(false, "Internal server error");
                 }
             });
 
@@ -179,29 +189,29 @@ module.exports = (httpserver, sessionMiddleware) => {
                                     const nickname = await userInfo.getNickname(userId);
                                     console.log(accountId + "님이 " + roomName + "의 매니저가 더이상 아닙니다.");
                                     socket.to(roomName).emit("delete_manager", nickname, accountId);
-                                    result(true);
+                                    result(true, "Succesfully manager privileges have been removed");
                                 }
                                 else{
                                     console.log(accountId + "님은 " + roomName + "의 매니저가 아니라서 해제할 수 없습니다.");
-                                    result(false);
+                                    result(false, accountId + "is not the manager of " + roomName + "'s room");
                                 }
                             }
                             else{
                                 console.log(accountId + "님은 존재하지 않는 계정입니다.");
-                                result(false);
+                                result(false, accountId + "is not existing account");
                             }
                         }
                         console.log("방장이 아니면 매니저를 뺏을 수 없습니다.");
-                        result(false);
+                        result(false, "Only the leader of the room can remove manager privileges");
                     }
                     else{
                         console.log("존재하지 않는 방입니다.");
-                        result(false);
+                        result(false, "The room doesn't exist");
                     }
                 }
                 catch(error){
                     console.log(error);
-                    result(false);
+                    result(false, "Internal server error");
                 }
             });
             //특정 유저 강퇴 이벤트
@@ -214,30 +224,41 @@ module.exports = (httpserver, sessionMiddleware) => {
                             //강퇴할 유저의 아이디를 바탕으로 userId를 얻어옴
                             const userId = await userInfo.getUserId(accountId);
                             if(userId != -1 && userId != null){
+                                const roomsOfUser = Array.from(socket.rooms);
                                 const list = Array.from(wsServer.sockets.sockets.values()).filter(
-                                    (socket) => socket["userId"] == userId
+                                    (socket) => socket["userId"] == userId && roomsOfUser.includes(roomName)
                                 );
+                                if(list.length == 0){
+                                    result(false, accountId + "is not in the " + roomName + "'s room");
+                                    return;
+                                }
                                 list.forEach((socket) => {
                                     socket.leave(roomName);
                                     wsServer.to(socket.id).emit("ban", roomName);
                                 });
-                                result(true);
+                                result(true, "Successfully user kicked");
                                 const nickname = await userInfo.getNickname(userId);
                                 console.log(nickname + " (" + accountId + ") 님이 " + roomName + "에서 강퇴당하셨습니다.")
                                 socket.to(roomName).emit("kicked", nickname, accountId);
                             }
                             else{
-                                result(false);
+                                console.log("존재하지 않는 계정입니다.");
+                                result(false, accountId + "is not existing account");
                             }
+                        }
+                        else{
+                            console.log("방장이나 매니저만 추방할 수 있습니다.");
+                            result(false, "Only the leader or managers of the room can kick user"); 
                         }
                     }
                     else{
-                        result(false);
+                        console.log("존재하지 않는 방입니다.");
+                        result(false, "The room doesn't exist");
                     }
                 }
                 catch(err){
                     console.log(err);
-                    result(false);
+                    result(false, "Internal server error");
                 }
             });
 
