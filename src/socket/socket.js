@@ -52,9 +52,8 @@ module.exports = (httpserver, sessionMiddleware) => {
                     const nickname = await userInfo.getNickname(session.userId);
                     result(true, "Successfully joined room");
                     socket.to(roomName).emit("welcome", socket.id, nickname);
-                    wsServer.sockets.emit("room_change", publicRooms());
-                }
-                else{
+                    wsServer.sockets.emit("room_change", publicRooms()); 
+		} else{
                     result(false, "The streamer is offline");
                 }
             });
@@ -289,8 +288,9 @@ module.exports = (httpserver, sessionMiddleware) => {
             
             //연결이 끊어지기 직전에 보내는 이벤트
             socket.on("disconnecting", async() => {
-                socket.rooms.forEach(async (roomName) => {
-                    socket.to(roomName).emit("bye");
+                socket.rooms.forEach(async (roomName) => {	
+                    const nickname = await userInfo.getNickname(session.userId);
+                    socket.to(roomName).emit("bye", socket.id, nickname);
                     try{
                         if(roomName in roomRoles){
                             const checkroom = roomRoles[roomName];
