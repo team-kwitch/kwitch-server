@@ -51,8 +51,7 @@ module.exports = (httpserver, sessionMiddleware) => {
                     socket.join(roomName);
                     const nickname = await userInfo.getNickname(session.userId);
                     result(true, "Successfully joined room");
-                    socket.to(roomName).emit("chatting_enter", nickname);
-                    socket.to(roomName).emit("welcome");
+                    socket.to(roomName).emit("welcome", socket.id, nickname);
                     wsServer.sockets.emit("room_change", publicRooms());
                 }
                 else{
@@ -78,8 +77,6 @@ module.exports = (httpserver, sessionMiddleware) => {
                     await userInfo.createRoom(roomName, title, session.userId);
                     const nickname = await userInfo.getNickname(session.userId);
                     result(true, "Succesfully room created");
-                    socket.to(roomName).emit("chatting_enter", nickname);
-                    socket.to(roomName).emit("welcom");
                     wsServer.sockets.emit("room_change", publicRooms());
                 }
                 else{
@@ -281,13 +278,13 @@ module.exports = (httpserver, sessionMiddleware) => {
 
             //WebRTC 전용인가? 몰루?
             socket.on("offer", (offer, roomName) => {
-                socket.to(roomName).emit("offer", offer);
+                socket.to(roomName).emit("offer", socket.id, offer);
             });
             socket.on("answer", (answer, roomName) => {
-                socket.to(roomName).emit("answer", answer);
+                socket.to(roomName).emit("answer", socket.id, answer);
             });
             socket.on("ice", (ice, roomName) => {
-                socket.to(roomName).emit("ice", ice);
+                socket.to(roomName).emit("ice", socket.id, ice);
             })
             
             //연결이 끊어지기 직전에 보내는 이벤트
