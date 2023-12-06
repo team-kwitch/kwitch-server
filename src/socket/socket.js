@@ -64,6 +64,10 @@ module.exports = (httpserver, sessionMiddleware) => {
             socket.on("create_room", async(roomName, title, result) => {
                 const roomsOfUser = Array.from(socket.rooms);
                 if(!wsServer.sockets.adapter.rooms.get(roomName) && !roomsOfUser.includes(roomName)){
+                    if(filter.checkAbuse(title)){
+                        result(false, "Abuse word not allowed");
+                        return;
+                    }
                     console.log(session.userId + "님이 " + roomName + "방을 생성합니다.");
                     socket['userId'] = session.userId;
                     if(!roomRoles[roomName]){
