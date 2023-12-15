@@ -80,7 +80,6 @@ module.exports = (httpserver, sessionMiddleware) => {
           roomRoles[roomName] = { leader: session.userId, manager: [] };
           socket.join(roomName);
           await userInfo.createRoom(roomName, title, session.userId);
-          const nickname = await userInfo.getNickname(session.userId);
           result(true, "Succesfully room created");
           wsServer.sockets.emit("room_change", publicRooms());
         } else {
@@ -101,7 +100,9 @@ module.exports = (httpserver, sessionMiddleware) => {
             if (room != null) {
               //나간 사람이 방장일때만 종료
               if (checkroom.leader == session.userId) {
+                socket.to(roomName).emit("on_destroy_room", roomName);
                 wsServer.in(roomName).socketsLeave(roomName);
+                wsServer.sockets.emit("room_change", publicRooms());
                 socket.leave(roomName);
                 console.log(roomName + "방송이 종료되었습니다");
                 await room.destroy();
@@ -355,34 +356,31 @@ module.exports = (httpserver, sessionMiddleware) => {
       //연결이 끊어지기 직전에 보내는 이벤트
       socket.on("disconnecting", async () => {
         socket.rooms.forEach(async (roomName) => {
-          const nickname = await userInfo.getNickname(session.userId);
-          socket.to(roomName).emit("bye", socket.id, nickname);
           try {
             if (roomName in roomRoles) {
               const checkroom = roomRoles[roomName];
               const room = await Room.findOne({
                 name: roomName,
               });
-              console.log(checkroom);
               if (room != null) {
-                //나간 사람이 방장일때만 종료
+                // 나간 사람이 방장일때만 종료
                 if (checkroom.leader == session.userId) {
+                  socket.to(roomName).emit("on_destroy_room", roomName);
                   wsServer.in(roomName).socketsLeave(roomName);
                   socket.leave(roomName);
                   console.log(roomName + "방송이 비정상적으로 종료되었습니다");
                   await room.destroy();
+                } else {
+                  const nickname = await userInfo.getNickname(session.userId);
+                  socket.to(roomName).emit("bye", socket.id, nickname);
                 }
+                wsServer.sockets.emit("room_change", publicRooms());
               }
             }
           } catch (err) {
             console.log(err);
           }
         });
-        wsServer.sockets.emit("room_change", publicRooms());
-      });
-      //연결이 완전히 끊긴 후 보내는 이벤트
-      socket.on("disconnect", () => {
-        wsServer.sockets.emit("room_change", publicRooms());
       });
     }
   });
