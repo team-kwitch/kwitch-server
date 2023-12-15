@@ -279,6 +279,14 @@ module.exports = (httpserver, sessionMiddleware) => {
                 }
             });
 
+            //개인이 방 나가기
+            socket.on("leaveroom", (roomName) => {
+                const roomsOfUser = Array.from(socket.rooms);
+                if(wsServer.sockets.adapter.rooms.get(roomName) && roomsOfUser.includes(roomName)){
+                    socket.leave(roomName);
+                }
+            });
+
             //WebRTC 전용인가? 몰루?
             socket.on("offer", (offer, roomName) => {
                 socket.to(roomName).emit("offer", offer);
