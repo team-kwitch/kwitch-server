@@ -1,9 +1,11 @@
 const dotenv = require('dotenv');
 const express = require('express');
 const bodyParser = require('body-parser');
-const socketIO = require('socket.io');
-const session = require('express-session');       
-const http = require('http');           
+const session = require('express-session');   
+const passport = require('passport');
+const Room = require('./models/room.js');
+const http = require('http');
+const socket = require('./src/socket/socket.js');           
 const MySQLStore = require('express-mysql-session')(session);
 dotenv.config();
 
@@ -13,127 +15,54 @@ const env = process.env.DATA_ENV || 'development';
 const config = require('./config/config.js')[env];
 
 const app = express();
-    
-app.set('port', 3000);
 
-app.use(bodyParser.json());
+const indexRouter = require('./src/routes/');
+const userRouter = require('./src/routes/user');
+const roomRouter = require('./src/routes/room');
 
-app.use(express.static('./src/public'));
-
-app.use(session({
+const sessionMiddleware = session({
     key : 'login',
     secret:process.env.COOKIE_SECRET,
     resave: false,
-    saveUninitialized : true,
+    saveUninitialized: true,
+    rolling : true,
     store: new MySQLStore({
         host : config.host,
         port : 3306,
         user : config.user,
         clearExpired: true,
+        checkExpirationInterval: 30000,
         password : config.password,
-        database : config.database
+        database: config.database,
     }),
     cookie: {
-        maxAge: 3600000
+        maxAge : 0
     }
-}))
+});
 
-app.get("/", (req, res)=>{
+app.set('port', 8000);
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use(express.static('./src/public'));
+
+app.use(sessionMiddleware);
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.use("/", indexRouter);
+app.use("/user", userRouter);
+app.use("/room", roomRouter);
+
+app.post("/test", (req, res) => {
+    console.log(req.session);
     res.status(200).send("s");
 });
 
-//로그인
-app.post("/signin", async (req, res)=>{
-    try{
-        const LoginSystem = require("./src/login/loginSystem.js");
-        const {id, password} = req.body;
-
-        const module = new LoginSystem(id, password);
-        const execute = await module.Login();
-
-        console.log(req.session);
-        if (req.session.isLogined == false || req.session.isLogined == null) {
-             if(execute != -1){
-                    console.log(id + "님이 로그인하셨습니다.");
-                    console.log(req.session);
-                    req.session.userId = execute;
-                    req.session.isLogined = true;
-
-                    //세션 만료 시간은 1시간
-                    const hour = 3600000
-                    req.session.cookie.expires = new Date(Date.now() + hour)
-                    console.log(req.session);
-                    req.session.save((error) => {
-                        if (error) {
-                            console.log(error);
-                        }
-                        else {
-                            res.status(200).send("OK");
-                        }
-                    });
-                }
-                else{
-                    console.log(id + "님은 등록되지 않은 회원입니다.");
-                    res.status(400).json({msg:'failed username : ' + id,userId : execute});
-                }        
-        }
-        else {
-            res.status(401).send("이미 로그인중이십니다.");
-        }
-    }
-    catch (err){
-        console.log(err);
-        if(err == 'Nan') res.status(401).json({msg:'Non Account'});
-        else res.status(401).json({msg:'Format Error'});
-    }},
-);
-
-app.get("/signout", (req, res) => {
-    if (req.session.isLogined == true) {
-        req.session.destroy(e => {
-            if (e) console.log(e);
-        });
-        res.status(200).send("OK");
-    }
-    else {
-        res.status(400).send("test");
-    }
-});
-
-//회원가입
-app.post("/signup", async (req, res)=>{
-        try{
-            const LoginSystem = require("./src/login/loginSystem.js");
-
-            const {id, password} = req.body;
-
-            const module = new LoginSystem(id, password);
-            const execute = await module.Register();
-
-            console.log(id + " " + password);
-
-            if(execute == 1){
-                console.log(id + "님이 회원가입 하셨습니다.");
-                res.status(200).send('success register');
-            }
-            else if(execute == 2){
-                console.log(id + "님은 이미 등록된 회원입니다.");
-                res.status(400).send('duplicate username : ' + id);
-            }
-            else {
-                console.log("비밀번호 형식이 틀렸습니다.");
-                res.status(400).send('password pattern is not correct');
-            }
-        }
-        catch (err){
-            console.log(err);
-            res.status(401).send('Unexpected Error');
-        }
-    },
-);
-
 const httpserver = http.createServer(app);
-const wsServer = socketIO(httpserver);
+
+const webSocket = socket(httpserver, sessionMiddleware);
 
 httpserver.listen(app.get('port'), async() => {
     console.log(app.get('port'), '번 포트에서 대기중');
@@ -145,13 +74,14 @@ httpserver.listen(app.get('port'), async() => {
         .catch((error) => {
             console.log(error);
         });
-});
-
-wsServer.on("connection", (socket) => {
-    console.log("연결!!");
-    socket.on("enter_room", (roomName, done) => {
-        console.log(socket.id + "님이 " + roomName + "에 입장합니다.");
-        socket.join(roomName);
-        done();
-    });
+    await Room.destroy({
+        where: {},
+        truncate: true
+        })
+        .then(() => {
+            console.log('Room 테이블의 모든 데이터가 정상적으로 삭제되었습니다.');
+        })
+        .catch((error) => {
+            console.error('데이터 삭제 중 오류 발생:', error);
+        });
 });

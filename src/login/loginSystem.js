@@ -9,8 +9,9 @@ class LoginSystem{
         this._password = pass;
     }
 
-    async Register(){
+    async Register(nickname){
         const cryptedId = await cryptoModule.cipher(this._id);
+        if(nickname == null) nickname = "끼얏호우";
         
         const exist = await Account.findOne({
             where:{
@@ -30,7 +31,7 @@ class LoginSystem{
 
             //DB에 계정 정보 등록
             const account = await Account.create({id: cryptedId, password: cryptedPW, salt: salt});
-            const user = await User.create();
+            const user = await User.create({nickname:nickname});
             await account.setUser(user);
 
             console.log("회원가입 성공");
@@ -82,6 +83,19 @@ class LoginSystem{
             }
         });
         return bool; 
+    }
+
+    async GetInformation(userId){
+        const user = await User.findOne({
+            attributes : ['nickname'],
+            where : {
+                id : userId
+            }
+        });
+
+        console.log(user.nickname);
+
+        return user.nickname;
     }
 }
 

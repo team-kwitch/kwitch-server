@@ -12,6 +12,7 @@
     "nodemon": "^3.0.1"
   },
   "dependencies": {
+    "@socket.io/admin-ui": "^0.5.1",
     "body-parser": "^1.20.2",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
@@ -19,8 +20,10 @@
     "express": "^4.18.2",
     "express-mysql-session": "^3.0.0",
     "express-session": "^1.17.3",
-    "mysql2": "^3.6.3",
-    "sequelize": "^6.35.0",
+    "localtunnel": "^2.0.2",
+    "mysql2": "^3.6.5",
+    "passport": "^0.6.0",
+    "sequelize": "^6.35.1",
     "sequelize-cli": "^6.6.2",
     "socket.io": "^4.7.2"
   }

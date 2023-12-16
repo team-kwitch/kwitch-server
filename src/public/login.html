@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로그인</title>
+</head>
+<body>
+  <h2>반가운 얼굴이네요. 로그인 해주세요.</h2>
+  <form action="/signin" method="post">
+    <label for="id">아이디:</label>
+    <input type="text" id="id" name="id" required>
+    <br>
+    <label for="password">비밀번호:</label>
+    <input type="password" id="password" name="password" required>
+    <br>
+    <label for="isRemember">기억할까요:</label>
+    <input type="checkbox" id="isRemember" name="isRemember">
+    <br>
+    <button type="submit">로그인</button>
+  </form>
+  <h2>못보던 얼굴인디?. 회원가입 쳐해라.</h2>
+  <form action="/signup" method="post">
+    <label for="id">아이디:</label>
+    <input type="text" id="id" name="id" required>
+    <br>
+    <label for="password">비밀번호:</label>
+    <input type="password" id="password" name="password" required>
+    <br>
+    <button type="submit">회원가입</button>
+  </form>
+  <h2>잘있어라 나의 오랜 친구여.</h2>
+  <form action="/signout" method="post">
+    <button type="submit">로그아웃</button>
+  </form>
+</body>
+<script>
+</script>
+</html>
