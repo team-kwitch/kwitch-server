@@ -1,8 +1,93 @@
 import type { Server, Socket } from "socket.io";
+import prisma from "../lib/prisma";
+import { Request } from "express";
 
-export function registerRoomHandler(io: Server, socket: Socket) {
-  socket.on("join_room", (roomId: number, done: Function) => {
-    done();
+export function registerChannelHandler(io: Server, socket: Socket) {
+  const req = socket.request as Request;
+  const user = req.user;
+
+  socket.on("channels:create", async (title: string, done: Function) => {
+    try {
+      const validateChannel = await prisma.channel.findUnique({
+        where: { broadcasterUsername: user.username },
+      });
+
+      if (validateChannel) {
+        done({
+          success: false,
+          message: "You can't turn on more than one broadcast.",
+        });
+        return;
+      }
+
+      const channel = await prisma.channel.create({
+        data: {
+          title,
+          broadcasterUsername: user.username,
+        },
+      });
+
+      io.emit("channels:update");
+      socket.join(user.username);
+      console.log(`channel created: ${channel.title}`);
+      done({ success: true });
+    } catch (err) {
+      done({ success: false, message: err.message });
+    }
+  });
+
+  socket.on("channels:delete", async (done: Function) => {
+    try {
+      const channel = await prisma.channel.delete({
+        where: { broadcasterUsername: user.username },
+      });
+      console.log(`channel deleted: ${channel.title}`);
+      done({ success: true });
+    } catch (err) {
+      done({ success: false, message: err.message });
+    }
+  });
+
+  socket.on("channels:join", async (username: string, done: Function) => {
+    try {
+      const channel = await prisma.channel.update({
+        where: { broadcasterUsername: username },
+        data: { viewers: { increment: 1 } },
+      });
+
+      if (!channel) {
+        done({ success: false, message: "Channel is not online." });
+        return;
+      }
+
+      socket.join(username);
+      socket.to(username).emit("channels:joined", user.username);
+      console.log(`${user.username} joined ${channel.broadcasterUsername}`);
+      done({ success: true });
+    } catch (err) {
+      done({ success: false, message: err.message });
+    }
+  });
+
+  socket.on("channels:leave", async (username: string, done: Function) => {
+    try {
+      const channel = await prisma.channel.update({
+        where: { broadcasterUsername: username },
+        data: { viewers: { decrement: 1 } },
+      });
+
+      if (!channel) {
+        done({ success: false, message: "Channel is not online." });
+        return;
+      }
+
+      socket.leave(username);
+      io.to(username).emit("channels:left", user.username);
+      console.log(`${user.username} left ${username}`);
+      done({ success: true });
+    } catch (err) {
+      done({ success: false, message: err.message });
+    }
   });
 }
 

@@ -1,210 +1,31 @@
-<!DOCTYPE html5>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <title>Home</title>
-    <link rel="shortcut icon" href="#">
-</head>
-<body>
-    <style>
-        .chat { height: 350px; overflow-y: scroll;}
-        .line{margin-top: 10px; display: flex;}
-        .chatbox {background: #eee; padding: 5px; max-width: 200px;}
-        .mine {margin-left: auto;}
-    </style>
-    <h2 id="home">This is Home</h2>
-    <div>
-        <a>생성하실 채팅방을 써주세용</a>
-        <input id = "createName" type = "text">
-        <button id="link" onclick="create()">링크 스따또</button>
-    </div>
-    <div>
-        <a>입장하실 채팅방을 써주세용</a>
-        <input id = "roomName" type = "text">
-        <button id="link" onclick="enter()">링크 스따또</button>
-    </div>
-    <div>
-        <a>채팅 내용 써주세용</a>
-        <input id="chat" type="text">
-        <button id="chatlink" onclick="chat()">채팅 보내기</button>
-    </div>
-    <div>
-        <a>강퇴할 유저를 써주세용</a>
-        <input id="kick" type="text">
-        <button id="chatlink" onclick="kick()">채팅 보내기</button>
-    </div>
-    <div>
-        <a>매니저 줄 유저를 써주세용</a>
-        <input id="give" type="text">
-        <button id="chatlink" onclick="givemanager()">채팅 보내기</button>
-    </div>
-    <div>
-        <a>매니저를 뺏을 유저를 써주세용</a>
-        <input id="remove" type="text">
-        <button id="chatlink" onclick="removemanager()">채팅 보내기</button>
-    </div>
-    <div id="room">
-        <form>
-            <input type = "text">
-            <button>Link</button>
-        </form>
-    </div>
-    <div id="call" style="float: left; position: relative; width: 80%; padding-top: 56.25%;">
-        <div id="myStream" style="position: absolute; top: 0; left: 0; bottom: 0; right: 0;">
-            <video id="myCam" autoplay="true" playsinline="true" style="float: left; width: 100%; height: 55%"></video>
-            <video id="myPeer" autoplay="true" playsinline="true" style="float: left; width: 100%; height: 55%"></video>
+    <head>
+        <meta charset="UTF-8">
+        <title>Passport example</title>
+    </head>
+    <body>
+        <p>Authenticated!</p>
+        <p>Socket ID: <span id="socketId"></span></p>
+        <p>Username: <span id="username"></span></p>
+        <form action="/logout" method="post">
             <div>
-                <button id="mute">Mute</button>
-                <button id="media">Media</button>
-                <button id="screen">Cam</button>
-                <select id="cameras"></select>
+                <input type="submit" value="Log out" />
             </div>
-            
-        </div>
-    </div>
-    <div style="float:left; width: 20%;">
-        <br>
-        <div class = "chat">
-        </div>
-    </div>
-    
-    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
-    <script type="text/javascript" src="script.js"></script>
-</body>
-<script>
-    const button = document.getElementById("link");
+        </form>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+          const socket = io();
+          const socketIdSpan = document.getElementById("socketId");
+          const usernameSpan = document.getElementById("username");
 
-    function enter(){
-        const input = document.getElementById("roomName").value;
-        console.log(input);
+          socket.on('connect', () => {
+            socketIdSpan.innerText = socket.id;
 
-        socket.emit('enter_room', input, (result, msg) => {
-            if(result == true){
-                const room = document.getElementById("home");
-                room.textContent = input + "방에 접속 성공!!";
-            }
-            else{
-                alert(msg);
-            }
-        });
-    }
-
-    async function create(){
-        const input = document.getElementById("createName").value;
-        console.log(input);
-        roomName = input;
-        await initRoom();
-        socket.emit('create_room', input, "재밌겠다", (result, msg) => {
-            console.log(result);
-            if(result == true){
-                const room = document.getElementById("home");
-                room.textContent = input + "방에 생성 및 접속 성공!!";
-            }
-            else{
-                alert(msg);
-            }
-        });
-    }
-
-    function kick(){
-        const input = document.getElementById("kick").value;
-        const roomName = document.getElementById("createName").value;
-        if(roomName == null) roomName = document.getElementById("roomName").value;
-        console.log(input);
-
-        socket.emit('kick', input, roomName, (result, msg) => {
-            if(result){
-                const room = document.getElementById("home");
-                room.textContent = input + " 내보내기 성공!!";
-            }
-            else{
-                alert(msg);
-            }
-        });
-    }
-
-    function givemanager(){
-        const input = document.getElementById("give").value;
-        const roomName = document.getElementById("createName").value;
-        if(roomName == null) roomName = document.getElementById("roomName").value;
-        console.log(input);
-
-        socket.emit('give_manager', input, roomName, (result, msg) => {
-            if(result){
-                const room = document.getElementById("home");
-                room.textContent = input + " 매니저 주기 성공!!";
-            }
-            else{
-                alert(msg);
-            }
-        });
-    }
-
-    function removemanager(){
-        const input = document.getElementById("remove").value;
-        const roomName = document.getElementById("createName").value;
-        if(roomName == null) roomName = document.getElementById("roomName").value;
-        console.log(input);
-
-        socket.emit('remove_manager', input, roomName, (result, msg) => {
-            if(result){
-                const room = document.getElementById("home");
-                room.textContent = input + " 매니저 뺏기 성공!!";
-            }
-            else{
-                alert(msg);
-            }
-        });
-    }
-
-    function addMessage(value, target){
-        var template;
-        if(target == 0) template = '<div class="line"><span class="chatbox mine">' + value + '</span></div>';
-        else template = '<div class="line"><span class="chatbox">' + value + '</span></div>';
-        document.querySelector('.chat').insertAdjacentHTML('beforeend', template);
-    }
-
-    function chat(){
-        var value = document.querySelector('#chat').value
-        socket.emit("send_message", value, document.getElementById("roomName").value, (ok, msg) => {
-            if(ok == true) addMessage(value, 0);
-            else{
-                alert(msg);
-            }
-        });
-    }
-
-    socket.on("chatting_enter", (id)=>{
-        addMessage(id + "님이 들어왔습니다.", 1);
-    });
-
-    socket.on("delete_manager", (nickname, accountId) => {
-        addMessage(nickname + "(" + accountId + ")는 매니저가 아니지롱.", 1);
-    });
-
-    socket.on("new_manager", (nickname, accountId) => {
-        addMessage(nickname + "(" + accountId + ")가 매니저가 되버려써.", 1);
-    });
-
-    socket.on("kicked", (nickname, accountId) => {
-        addMessage(nickname + "(" + accountId + ")는 강퇴당해 버려써.", 1);
-    });
-    
-    socket.on("ban", (roomName) =>{
-        addMessage("저 개새끼", 1);
-        alert(roomName + "에서 강퇴당하셨습니다!!");
-    });
-
-    socket.on("bye", (account, nickname) => {
-        addMessage(nickname + "(" + account + ")" + "님이 나갔습니다.", 1);
-    });
-
-    socket.on("new_message", (msg, account, nickname)=>{
-        addMessage(nickname + "(" + account + ")" + " : " + msg, 1);
-    });
-
-    socket.on("no_room", (msg) => {
-        console.log(msg);
-    })
-</script>
+            socket.emit('whoami', (username) => {
+              usernameSpan.innerText = username;
+            });
+          });
+        </script>
+    </body>
 </html>

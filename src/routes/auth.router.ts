@@ -1,14 +1,15 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import prisma from "../lib/prisma";
 import passport from "passport";
 import bcrypt from "bcrypt";
+import { nextTick } from "process";
 
 const authRouter = express.Router();
 
 /**
  * 회원가입
  */
-authRouter.post("/sign-up", async (req, res) => {
+authRouter.post("/sign-up", async (req: Request, res: Response) => {
   try {
     const { username, password }: { username: string; password: string } =
       req.body;
@@ -39,7 +40,7 @@ authRouter.post("/sign-up", async (req, res) => {
 /**
  * 로그인
  */
-authRouter.post("/sign-in", async (req, res) => {
+authRouter.post("/sign-in", async (req: Request, res: Response) => {
   try {
     passport.authenticate("local", (authErr, user, info) => {
       if (authErr) {
@@ -61,6 +62,15 @@ authRouter.post("/sign-in", async (req, res) => {
     console.error(err);
     res.status(500).json({ message: err.message });
   }
+});
+
+authRouter.post("/sign-out", (req: Request, res: Response, next) => {
+  req.logout((err) => {
+    if (err) {
+      next(err);
+    }
+    res.json({ result: true, message: "Successfully logged out." });
+  });
 });
 
 export default authRouter;
