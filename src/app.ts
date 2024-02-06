@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request } from "express";
 import passport from "passport";
 import { PrismaSessionStore } from "@quixo3/prisma-session-store";
 import prisma from "./lib/prisma";
@@ -8,10 +8,11 @@ import bodyParser from "body-parser";
 import session from "express-session";
 import rootRouter from "./routes";
 import { SECRET_KEY, SERVER_PORT } from "./util/env";
-import { registerChannelHandler } from "./util/socket";
-import cors from "cors";
+import {
+  registerChannelHandler,
+  registerP2PConnectionHandler,
+} from "./util/socket";
 import "./lib/passport";
-import { isLocale } from "validator";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -63,6 +64,7 @@ io.on("connection", (socket: Socket) => {
   const user = req.user;
 
   registerChannelHandler(io, socket);
+  registerP2PConnectionHandler(io, socket);
 
   socket.on("disconnecting", async () => {
     console.log(`socket disconnected: ${socket.id}`);
@@ -77,5 +79,6 @@ io.on("connection", (socket: Socket) => {
 });
 
 httpServer.listen(SERVER_PORT, async () => {
+  console.log(`Server is running on port ${SERVER_PORT}`);
   await prisma.channel.deleteMany();
 });
