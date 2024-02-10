@@ -2,7 +2,6 @@ import express, { NextFunction, Request, Response } from "express";
 import prisma from "../lib/prisma";
 import passport from "passport";
 import bcrypt from "bcrypt";
-import { nextTick } from "process";
 
 const authRouter = express.Router();
 
@@ -55,7 +54,11 @@ authRouter.post("/sign-in", async (req: Request, res: Response) => {
         if (loginErr) {
           return res.status(500).json({ message: loginErr.message });
         }
-        return res.json({ result: true, message: "로그인 성공" });
+        return res.json({
+          result: true,
+          message: "로그인 성공",
+          user: { id: user.id, username: user.username },
+        });
       });
     })(req, res);
   } catch (err) {
