@@ -83,9 +83,9 @@ export function registerChannelHandler(io: Server, socket: Socket) {
         return;
       }
 
+      socket.to(broadcaster).emit("channels:left", user.username);
+      socket.to(broadcaster).emit("p2p:left", socket.id);
       socket.leave(broadcaster);
-      io.to(broadcaster).emit("channels:left", user.username);
-      io.to(broadcaster).emit("p2p:left", socket.id);
       console.log(`${user.username} left ${broadcaster}'r channel.`);
       done({ success: true });
     } catch (err) {

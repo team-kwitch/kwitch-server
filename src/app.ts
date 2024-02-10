@@ -69,12 +69,27 @@ io.on("connection", (socket: Socket) => {
   socket.on("disconnecting", async () => {
     console.log(`socket disconnected: ${socket.id}`);
 
-    await prisma.channel.deleteMany({
-      where: {
-        broadcasterUsername: user.username,
-      },
+    socket.rooms.forEach(async (roomname) => {
+      // roomname is equal to the username of the channel owner
+
+      if (roomname === socket.id) {
+        return;
+      }
+
+      if (roomname !== user.username) {
+        socket.to(roomname).emit("channels:left", user.username);
+        socket.to(roomname).emit("p2p:left", socket.id);
+        socket.leave(roomname);
+        console.log(`${user.username} left ${roomname}'r channel.`);
+      } else {
+        await prisma.channel.delete({
+          where: {
+            broadcasterUsername: roomname,
+          },
+        });
+        io.emit("channels:update");
+      }
     });
-    io.emit("channels:update");
   });
 });
 
