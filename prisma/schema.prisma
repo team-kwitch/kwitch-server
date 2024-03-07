@@ -1,0 +1,41 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int      @id @default(autoincrement()) @map("user_id")
+  username String   @unique
+  password String
+  salt     String
+  channel  Channel?
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @map("session_id")
+  sid       String   @unique
+  data      String
+  expiresAt DateTime
+
+  @@map("sessions")
+}
+
+model Channel {
+  broadcaster         User     @relation(fields: [broadcasterUsername], references: [username])
+  broadcasterUsername String   @id @map("broadcaster_username")
+  title               String
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  viewers             Int      @default(1)
+
+  @@map("channels")
+}

@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql:8.3.0
+    container_name: kwitch-mysql-db
+    ports:
+      - "3306:3306"
+    restart: "unless-stopped"
+    environment:
+      MYSQL_DATABASE: kwitch
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: kwitch
+      MYSQL_PASSWORD: kwitch
+    volumes:
+      - "./volumes/mysql:/var/lib/mysql"
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD']
+      interval: 10s
+      timeout: 2s
+      retries: 100
+    networks:
+      - kwitch
+
+  api-server:
+    build: .
+    container_name: kwitch-api-server
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    env_file:
+      - ./.env.production
+    networks:
+      - kwitch
+
+
+networks:
+  kwitch:
