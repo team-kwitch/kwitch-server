@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   mysql:
@@ -15,7 +15,11 @@ services:
     volumes:
       - "./volumes/mysql:/var/lib/mysql"
     healthcheck:
-      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD']
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD",
+        ]
       interval: 10s
       timeout: 2s
       retries: 100
@@ -34,7 +38,6 @@ services:
       - ./.env.production
     networks:
       - kwitch
-
 
 networks:
   kwitch:

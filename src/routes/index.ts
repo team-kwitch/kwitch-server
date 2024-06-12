@@ -1,10 +1,10 @@
 import express from "express";
 
-const rootRouter = express.Router();
-
 import authRouter from "./auth.router";
-import userRouter from "./user.router";
 import channelRouter from "./channel.router";
+import userRouter from "./user.router";
+
+const rootRouter = express.Router();
 
 rootRouter.use("/api/auth", authRouter);
 rootRouter.use("/api/users", userRouter);

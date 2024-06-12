@@ -1,5 +1,6 @@
 import { Request, Response, Router } from "express";
-import prisma from "../lib/prisma";
+
+import prisma from "@lib/prisma";
 
 const channelRouter = Router();
 
@@ -11,7 +12,7 @@ channelRouter.get("/", async (req: Request, res: Response) => {
       channels.map((channel) => {
         channel["broadcaster"] = channel.broadcasterUsername;
         return channel;
-      })
+      }),
     );
   } catch (err) {
     console.error(err);

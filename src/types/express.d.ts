@@ -1,4 +1,3 @@
-import express from "express";
 import { User as UserModel } from "@prisma/client";
 
 declare module "express" {

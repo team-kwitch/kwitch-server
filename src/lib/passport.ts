@@ -1,15 +1,16 @@
-import passportLocal from "passport-local";
-import passport from "passport";
-import prisma from "./prisma";
 import { User } from "@prisma/client";
 import bcrypt from "bcrypt";
+import passport from "passport";
+import passportLocal from "passport-local";
+
+import prisma from "./prisma";
 
 const LocalStrategy = passportLocal.Strategy;
 
 const verifyCallback = async (
   username: string,
   password: string,
-  done: Function
+  done: Function,
 ) => {
   try {
     const findUser = await prisma.user.findUnique({ where: { username } });
@@ -32,7 +33,7 @@ const verifyCallback = async (
 
 const localStrategy = new LocalStrategy(
   { usernameField: "username", passwordField: "password" },
-  verifyCallback
+  verifyCallback,
 );
 
 passport.use(localStrategy);

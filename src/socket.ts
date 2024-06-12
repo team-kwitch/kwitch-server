@@ -1,7 +1,9 @@
-import type { Server, Socket } from "socket.io";
-import prisma from "../lib/prisma";
 import { Request } from "express";
-import { filterSentence } from "./filter";
+import type { Server, Socket } from "socket.io";
+
+import prisma from "@lib/prisma";
+
+import { filterSentence } from "@utils/filter";
 
 export function registerChannelHandler(io: Server, socket: Socket) {
   const req = socket.request as Request;
@@ -104,13 +106,13 @@ export function registerChannelHandler(io: Server, socket: Socket) {
             "messages:sent",
             user.username,
             filteredMessage,
-            broadcaster === user.username
+            broadcaster === user.username,
           );
         done({ success: true });
       } catch (err) {
         done({ success: false, message: err.message });
       }
-    }
+    },
   );
 }
 
@@ -120,7 +122,7 @@ export function registerP2PConnectionHandler(io: Server, socket: Socket) {
     (broadcaster: string, offer: RTCSessionDescription) => {
       console.log(`offer from ${socket.id} to ${broadcaster}`);
       socket.to(broadcaster).emit("p2p:offer", offer);
-    }
+    },
   );
 
   socket.on(
@@ -128,7 +130,7 @@ export function registerP2PConnectionHandler(io: Server, socket: Socket) {
     (broadcaster: string, answer: RTCSessionDescription) => {
       console.log(`answer from ${socket.id} to ${broadcaster}`);
       socket.to(broadcaster).emit("p2p:answer", socket.id, answer);
-    }
+    },
   );
 
   socket.on("p2p:ice", (broadcaster: string, ice: RTCIceCandidate) => {
