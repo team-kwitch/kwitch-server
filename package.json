@@ -9,10 +9,6 @@
     "prisma:dev": "dotenv -e .env.local npx prisma migrate dev",
     "start:dev": "dotenv -e .env.local node dist/app.js"
   },
-  "author": {
-    "name": "Sukju Hong",
-    "email": "ehensnfl@gmail.com"
-  },
   "license": "MIT",
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
