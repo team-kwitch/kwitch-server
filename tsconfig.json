@@ -1,18 +1,21 @@
 {
   "compilerOptions": {
-    "outDir": "dist",
+    "outDir": "./dist",
     "target": "ES6",
     "module": "CommonJS",
     "esModuleInterop": true,
+    "baseUrl": "./src",
     "paths": {
-      "@/*": ["./src/*"],
-      "@types/*": ["./src/types/*"],
-      "@lib/*": ["./src/lib/*"],
-      "@routes/*": ["./src/routes/*"],
-      "@utils/*": ["./src/utils/*"]
-    }
+      "@lib/*": ["./lib/*"],
+      "@routes/*": ["./routes/*"],
+      "@utils/*": ["./utils/*"]
+    },
+    "typeRoots": ["node_modules/@types", "./typings"]
   },
-  "include": ["./src/**/*.ts"],
-  "exclude": ["node_modules"],
-  "ts-node": { "files": true }
+  "include": ["./src/**/*.ts", "typings/**/*.d.ts"],
+  "exclude": ["node_modules", "dist"],
+  "ts-node": {
+    "files": true,
+    "require": ["tsconfig-paths/register"]
+  },
 }

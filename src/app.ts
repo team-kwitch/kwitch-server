@@ -6,14 +6,14 @@ import http from "http";
 import passport from "passport";
 import { Server, Socket } from "socket.io";
 
-import { registerChannelHandler, registerP2PConnectionHandler } from "@/socket";
-
 import rootRouter from "@routes/index";
 
 import "@lib/passport";
 import prisma from "@lib/prisma";
 
 import { SECRET_KEY, SERVER_PORT } from "@utils/env";
+
+import { registerChannelHandler, registerP2PConnectionHandler } from "./socket";
 
 const app = express();
 const httpServer = http.createServer(app);
