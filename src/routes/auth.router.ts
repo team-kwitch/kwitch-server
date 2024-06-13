@@ -1,7 +1,8 @@
-import express, { NextFunction, Request, Response } from "express";
-import prisma from "../lib/prisma";
-import passport from "passport";
 import bcrypt from "bcrypt";
+import express, { Request, Response } from "express";
+import passport from "passport";
+
+import prisma from "../lib/prisma";
 
 const authRouter = express.Router();
 

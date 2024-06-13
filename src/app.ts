@@ -1,18 +1,19 @@
-import express, { Request } from "express";
-import passport from "passport";
 import { PrismaSessionStore } from "@quixo3/prisma-session-store";
-import prisma from "./lib/prisma";
-import http from "http";
-import { Server, Socket } from "socket.io";
 import bodyParser from "body-parser";
+import express, { Request } from "express";
 import session from "express-session";
-import rootRouter from "./routes";
-import { SECRET_KEY, SERVER_PORT } from "./util/env";
-import {
-  registerChannelHandler,
-  registerP2PConnectionHandler,
-} from "./util/socket";
-import "./lib/passport";
+import http from "http";
+import passport from "passport";
+import { Server, Socket } from "socket.io";
+
+import rootRouter from "@routes/index";
+
+import "@lib/passport";
+import prisma from "@lib/prisma";
+
+import { SECRET_KEY, SERVER_PORT } from "@utils/env";
+
+import { registerChannelHandler, registerP2PConnectionHandler } from "./socket";
 
 const app = express();
 const httpServer = http.createServer(app);

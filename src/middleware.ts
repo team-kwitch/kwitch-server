@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express";
 export function isAuthenticated(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "not authenticated" });

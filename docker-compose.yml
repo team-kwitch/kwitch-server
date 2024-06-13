@@ -1,40 +1,39 @@
-version: '3'
-
 services:
   mysql:
     image: mysql:8.3.0
-    container_name: kwitch-mysql-db
+    container_name: kwitch-mysql
+    hostname: mysql
     ports:
       - "3306:3306"
     restart: "unless-stopped"
     environment:
       MYSQL_DATABASE: kwitch
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_USER: kwitch
-      MYSQL_PASSWORD: kwitch
-    volumes:
-      - "./volumes/mysql:/var/lib/mysql"
+      MYSQL_ROOT_PASSWORD: develop
     healthcheck:
-      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD']
-      interval: 10s
-      timeout: 2s
-      retries: 100
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     networks:
-      - kwitch
+      - kwitch-internal
 
   api-server:
     build: .
     container_name: kwitch-api-server
+    hostname: api-server
     ports:
       - "8000:8000"
     depends_on:
       mysql:
         condition: service_healthy
     env_file:
-      - ./.env.production
+      - .env
     networks:
-      - kwitch
-
+      - kwitch-internal
 
 networks:
-  kwitch:
+  kwitch-internal:
