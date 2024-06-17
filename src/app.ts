@@ -10,6 +10,7 @@ import rootRouter from "@routes/index";
 
 import "@lib/passport";
 import prisma from "@lib/prisma";
+import redis from "@lib/redis";
 
 import { SECRET_KEY, SERVER_PORT } from "@utils/env";
 
