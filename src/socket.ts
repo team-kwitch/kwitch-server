@@ -4,6 +4,11 @@ import type { Server, Socket } from "socket.io";
 import prisma from "@lib/prisma";
 
 import { filterSentence } from "@utils/filter";
+import { Channel } from "@prisma/client";
+
+export function getRoomName(channel: Channel) {
+  return `channel/${channel.broadcasterId}/${channel.title}`;
+}
 
 export function registerChannelHandler(io: Server, socket: Socket) {
   const req = socket.request as Request;
@@ -12,7 +17,7 @@ export function registerChannelHandler(io: Server, socket: Socket) {
   socket.on("channels:create", async (title: string, done: Function) => {
     try {
       const validateChannel = await prisma.channel.findUnique({
-        where: { broadcasterUsername: user.username },
+        where: { broadcasterId: user.id },
       });
 
       if (validateChannel) {
@@ -26,12 +31,12 @@ export function registerChannelHandler(io: Server, socket: Socket) {
       const channel = await prisma.channel.create({
         data: {
           title,
-          broadcasterUsername: user.username,
+          broadcasterId: user.id,
         },
       });
 
       io.emit("channels:update");
-      socket.join(user.username);
+      socket.join(getRoomName(channel));
       console.log(`channel created by ${user.username}: ${channel.title}`);
       done({ success: true });
     } catch (err) {
@@ -42,7 +47,7 @@ export function registerChannelHandler(io: Server, socket: Socket) {
   socket.on("channels:delete", async (done: Function) => {
     try {
       const channel = await prisma.channel.delete({
-        where: { broadcasterUsername: user.username },
+        where: { broadcasterId: user.id },
       });
       console.log(`channel deleted: ${channel.title}`);
       done({ success: true });
@@ -51,11 +56,12 @@ export function registerChannelHandler(io: Server, socket: Socket) {
     }
   });
 
-  socket.on("channels:join", async (broadcaster: string, done: Function) => {
+  socket.on("channels:join", async (channelId: number, done: Function) => {
     try {
       const channel = await prisma.channel.update({
-        where: { broadcasterUsername: broadcaster },
+        where: { id: channelId },
         data: { viewers: { increment: 1 } },
+        include: { broadcaster: true },
       });
 
       if (!channel) {
@@ -63,21 +69,23 @@ export function registerChannelHandler(io: Server, socket: Socket) {
         return;
       }
 
-      socket.join(broadcaster);
-      socket.to(broadcaster).emit("channels:joined", user.username);
-      socket.to(broadcaster).emit("p2p:joined", socket.id);
-      console.log(`${user.username} joined ${broadcaster}'s channel.`);
+      const roomName = getRoomName(channel);
+      socket.join(roomName);
+      socket.to(roomName).emit("channels:joined", user.username);
+      socket.to(roomName).emit("p2p:joined", socket.id);
+      console.log(`${user.username} joined ${channel.broadcaster.username}'s channel.`);
       done({ success: true });
     } catch (err) {
       done({ success: false, message: err.message });
     }
   });
 
-  socket.on("channels:leave", async (broadcaster: string, done: Function) => {
+  socket.on("channels:leave", async (channelId: number, done: Function) => {
     try {
       const channel = await prisma.channel.update({
-        where: { broadcasterUsername: broadcaster },
+        where: { id: channelId },
         data: { viewers: { decrement: 1 } },
+        include: { broadcaster: true }
       });
 
       if (!channel) {
@@ -85,10 +93,11 @@ export function registerChannelHandler(io: Server, socket: Socket) {
         return;
       }
 
-      socket.to(broadcaster).emit("channels:left", user.username);
-      socket.to(broadcaster).emit("p2p:left", socket.id);
-      socket.leave(broadcaster);
-      console.log(`${user.username} left ${broadcaster}'r channel.`);
+      const roomName = getRoomName(channel);
+      socket.to(roomName).emit("channels:left", user.username);
+      socket.to(roomName).emit("p2p:left", socket.id);
+      socket.leave(roomName);
+      console.log(`${user.username} left ${channel.broadcaster.username}'r channel.`);
       done({ success: true });
     } catch (err) {
       done({ success: false, message: err.message });

@@ -10,7 +10,6 @@ import rootRouter from "@routes/index";
 
 import "@lib/passport";
 import prisma from "@lib/prisma";
-import redis from "@lib/redis";
 
 import { SECRET_KEY, SERVER_PORT } from "@utils/env";
 
@@ -84,10 +83,14 @@ io.on("connection", (socket: Socket) => {
         socket.leave(roomname);
         console.log(`${user.username} left ${roomname}'r channel.`);
       } else {
-        await prisma.channel.delete({
-          where: {
-            broadcasterUsername: roomname,
+        await prisma.channel.update({
+          data: {
+            isEnded: true,
+            endedAt: new Date(),
           },
+          where: {
+            broadcasterId: user.id,
+          }
         });
         io.emit("channels:update");
       }
@@ -95,7 +98,6 @@ io.on("connection", (socket: Socket) => {
   });
 });
 
-httpServer.listen(SERVER_PORT, async () => {
+httpServer.listen(SERVER_PORT, () => {
   console.log(`Server is running on port ${SERVER_PORT}`);
-  await prisma.channel.deleteMany();
 });

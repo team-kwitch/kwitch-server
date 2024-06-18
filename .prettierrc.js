@@ -5,7 +5,6 @@ module.exports = {
   semi: true,
   importOrder: [
     "^@/(.*)$",
-    "^@types/(.*)$",
     "^@routes/(.*)$",
     "^@lib/(.*)$",
     "^@utils/(.*)$",

@@ -1,4 +1,5 @@
 import { createClient, type RedisClientType } from "redis";
+import { REDIS_HOST, REDIS_PORT } from "@utils/env";
 
 class Redis {
   host: string;
@@ -7,8 +8,8 @@ class Redis {
   client: RedisClientType;
 
   constructor() {
-    this.host = process.env.REDIS_HOST || "localhost";
-    this.port = process.env.REDIS_PORT || "6379";
+    this.host = REDIS_HOST;
+    this.port = REDIS_PORT;
     this.connected = false;
     this.client = null;
   }
