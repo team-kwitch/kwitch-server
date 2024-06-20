@@ -24,19 +24,18 @@ authRouter.post("/sign-up", async (req: Request, res: Response) => {
         username,
         password: hashedPassword,
         salt,
-      },
-    });
-    const createdChannel = await prisma.channel.create({
-      data: {
-        name: createdUser.username,
-        ownerId: createdUser.id,
+        channel: {
+          create: {
+            name: username,
+          },
+        },
       },
     });
 
     res.json({
       result: true,
       message: "successfully created user",
-      data: { user: createdUser, channel: createdChannel },
+      data: { user: createdUser },
     });
   } catch (err) {
     console.error(err);

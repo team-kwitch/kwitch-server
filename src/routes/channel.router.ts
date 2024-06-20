@@ -1,10 +1,30 @@
 import { Request, Response, Router } from "express";
 
-import { getRoomName } from "@/socket";
+import prisma from "@/lib/prisma";
+import { redisConnection } from "@/lib/redis";
 
-import prisma from "@lib/prisma";
+import type { Broadcast } from "../../typings";
 
 const channelRouter = Router();
+
+channelRouter.get("/live", async (req: Request, res: Response) => {
+  const reply = await redisConnection.SCAN(0, {
+    MATCH: "channel:*",
+    COUNT: 10,
+  });
+
+  const keys = reply.keys;
+  const broadcasts = await Promise.all(
+    keys.map(async (key) => {
+      const broadcastWithviewers = await redisConnection.HGETALL(key);
+      const broadcast = JSON.parse(broadcastWithviewers.broadcast) as Broadcast;
+      const viewers = Number(broadcastWithviewers.viewers);
+      return { ...broadcast, viewers };
+    }),
+  );
+
+  res.json({ data: broadcasts });
+});
 
 channelRouter.get("/:channelId", async (req: Request, res: Response) => {
   const { channelId } = req.params;
@@ -14,13 +34,11 @@ channelRouter.get("/:channelId", async (req: Request, res: Response) => {
   }
 
   try {
-    const channels = await prisma.channel.findFirst(
-      {
-        where: {
-          id: channelId,
-        },
-      }
-    );
+    const channels = await prisma.channel.findFirst({
+      where: {
+        id: channelId,
+      },
+    });
 
     res.json({ data: channels });
   } catch (err) {

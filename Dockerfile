@@ -18,5 +18,5 @@ COPY typings ./typings
 RUN npm run build
 
 EXPOSE 8000
-ENTRYPOINT npm run prisma:migrate:dev && npm run start
+ENTRYPOINT npm run prisma:migrate:deploy && npm run start
 

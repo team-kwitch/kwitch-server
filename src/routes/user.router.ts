@@ -1,3 +1,4 @@
+import { Channel, User } from "@prisma/client";
 import express, { Request, Response } from "express";
 
 import { isAuthenticated } from "../middleware";
@@ -5,7 +6,10 @@ import { isAuthenticated } from "../middleware";
 const userRouter = express.Router();
 
 userRouter.get("/me", isAuthenticated, async (req: Request, res: Response) => {
-  return res.json({ user: { id: req.user.id, username: req.user.username } });
+  const user = req.user as User & { channel: Channel };
+  return res.json({
+    user: { id: user.id, username: user.username, channelId: user.channel.id },
+  });
 });
 
 export default userRouter;

@@ -13,7 +13,13 @@ import prisma from "@lib/prisma";
 
 import { SECRET_KEY, SERVER_PORT } from "@utils/env";
 
-import { registerChannelHandler, registerP2PConnectionHandler } from "./socket";
+import { Broadcast } from "../typings";
+import { redisConnection } from "./lib/redis";
+import {
+  getChannelKey,
+  registerBroadcastHandler,
+  registerP2PConnectionHandler,
+} from "./socket";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -64,35 +70,36 @@ io.on("connection", (socket: Socket) => {
   const req = socket.request as Request;
   const user = req.user;
 
-  registerChannelHandler(io, socket);
+  registerBroadcastHandler(io, socket);
   registerP2PConnectionHandler(io, socket);
 
   socket.on("disconnecting", async () => {
     console.log(`socket disconnected: ${socket.id}`);
 
-    socket.rooms.forEach(async (roomname) => {
-      // roomname is equal to the username of the channel owner
-
-      if (roomname === socket.id) {
+    socket.rooms.forEach(async (roomName: string) => {
+      if (roomName === socket.id) {
         return;
       }
 
-      if (roomname !== user.username) {
-        socket.to(roomname).emit("channels:left", user.username);
-        socket.to(roomname).emit("p2p:left", socket.id);
-        socket.leave(roomname);
-        console.log(`${user.username} left ${roomname}'r channel.`);
+      const channelKey = getChannelKey(roomName);
+      const isOnLive = await redisConnection.exists(channelKey);
+
+      if (!isOnLive) {
+        return;
+      }
+
+      const broadcast: Broadcast = JSON.parse(
+        await redisConnection.HGET(channelKey, "broadcast"),
+      );
+
+      if (broadcast.ownerId === user.id) {
+        await redisConnection.DEL(channelKey);
+        socket.to(broadcast.roomName).emit("broadcasts:destroy");
+        io.sockets.socketsLeave(roomName);
+        io.emit("broadcasts:update");
+        console.log("broadcast is automatically ended");
       } else {
-        await prisma.channel.update({
-          data: {
-            isEnded: true,
-            endedAt: new Date(),
-          },
-          where: {
-            broadcasterId: user.id,
-          }
-        });
-        io.emit("channels:update");
+        await redisConnection.HINCRBY(channelKey, "viewers", -1);
       }
     });
   });
@@ -100,4 +107,5 @@ io.on("connection", (socket: Socket) => {
 
 httpServer.listen(SERVER_PORT, () => {
   console.log(`Server is running on port ${SERVER_PORT}`);
+  redisConnection.FLUSHALL();
 });

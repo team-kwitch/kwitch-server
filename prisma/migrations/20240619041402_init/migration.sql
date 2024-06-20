@@ -22,14 +22,15 @@ CREATE TABLE `sessions` (
 
 -- CreateTable
 CREATE TABLE `channels` (
-    `broadcaster_username` VARCHAR(191) NOT NULL,
-    `title` VARCHAR(191) NOT NULL,
-    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `updated_at` DATETIME(3) NOT NULL,
-    `viewers` INTEGER NOT NULL DEFAULT 1,
+    `channel_id` VARCHAR(191) NOT NULL,
+    `name` VARCHAR(191) NOT NULL,
+    `description` VARCHAR(191) NULL,
+    `image_url` VARCHAR(191) NULL,
+    `owner_id` INTEGER NOT NULL,
 
-    PRIMARY KEY (`broadcaster_username`)
+    UNIQUE INDEX `channels_owner_id_key`(`owner_id`),
+    PRIMARY KEY (`channel_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
-ALTER TABLE `channels` ADD CONSTRAINT `channels_broadcaster_username_fkey` FOREIGN KEY (`broadcaster_username`) REFERENCES `users`(`username`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `channels` ADD CONSTRAINT `channels_owner_id_fkey` FOREIGN KEY (`owner_id`) REFERENCES `users`(`user_id`) ON DELETE RESTRICT ON UPDATE CASCADE;

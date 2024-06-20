@@ -44,8 +44,9 @@ passport.serializeUser((user: User, done) => {
 
 passport.deserializeUser((id: number, done) => {
   prisma.user
-    .findUnique({
+    .findFirst({
       where: { id: id },
+      include: { channel: true },
     })
     .then((user) => done(null, user))
     .catch((err) => done(err));
