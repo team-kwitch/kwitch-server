@@ -189,6 +189,7 @@ export function registerP2PConnectionHandler(io: Server, socket: Socket) {
 
   socket.on("p2p:ice", (channelId: string, ice: RTCIceCandidate) => {
     console.log(`ice from ${socket.id} to ${channelId}`);
+    console.log(ice);
     socket.to(channelId).emit("p2p:ice", socket.id, ice);
   });
 }
