@@ -2,93 +2,139 @@ import { Request } from "express";
 import type { Server, Socket } from "socket.io";
 
 import prisma from "@lib/prisma";
+import { redisConnection } from "@lib/redis";
 
 import { filterSentence } from "@utils/filter";
 
-export function registerChannelHandler(io: Server, socket: Socket) {
+import type { Broadcast } from "../typings";
+
+export function getChannelKey(channelId: string) {
+  return `channel:${channelId}`;
+}
+
+export function registerBroadcastHandler(io: Server, socket: Socket) {
   const req = socket.request as Request;
   const user = req.user;
 
-  socket.on("channels:create", async (title: string, done: Function) => {
+  socket.on("broadcasts:start", async (title: string, done: Function) => {
     try {
-      const validateChannel = await prisma.channel.findUnique({
-        where: { broadcasterUsername: user.username },
+      const channel = await prisma.channel.findFirst({
+        where: { ownerId: user.id },
       });
-
-      if (validateChannel) {
-        done({
-          success: false,
-          message: "You can't turn on more than one broadcast.",
-        });
-        return;
+  
+      const channelKey = getChannelKey(channel.id);
+      const isOnLive = await redisConnection.EXISTS(channelKey);
+      if (isOnLive) {
+        return done({ success: false, message: "You already has a broadcast" });
       }
 
-      const channel = await prisma.channel.create({
-        data: {
-          title,
-          broadcasterUsername: user.username,
+      // create a broadcast
+      const broadcast: Broadcast = {
+        title,
+        roomName: channel.id,
+        ownerId: user.id,
+      };
+
+      // set broadcast metadata in redis
+      await redisConnection.HSET(channelKey, {
+        viewers: 0,
+        broadcast: JSON.stringify(broadcast),
+      });
+
+      io.emit("broadcasts:update");
+      socket.join(channel.id);
+      console.log(`broadcast started on ${channel.name}`);
+      done({ success: true });
+    } catch (err) {
+      console.error(err);
+      done({ success: false, message: err.message });
+    }
+  });
+
+  socket.on("broadcasts:end", async (channelId: string, done: Function) => {
+    try {
+      const channel = await prisma.channel.findFirst({
+        where: {
+          id: channelId,
         },
       });
 
-      io.emit("channels:update");
-      socket.join(user.username);
-      console.log(`channel created by ${user.username}: ${channel.title}`);
+      if (!channel) {
+        return done({ success: false, message: "Channel not found" });
+      }
+
+      const channelKey = getChannelKey(channel.id);
+      const isOnLive = await redisConnection.EXISTS(channelKey);
+      if (!isOnLive) {
+        return done({ success: false, message: "This channel is offline" });
+      }
+
+      socket.to(channel.id).emit("broadcasts:destroy");
+      io.sockets.socketsLeave(channelId);
+      // del broadcast metadata in redis
+      await redisConnection.DEL(channelKey);
+
+      console.log(`broadcast ended on ${channel.name}`);
       done({ success: true });
     } catch (err) {
       done({ success: false, message: err.message });
     }
   });
 
-  socket.on("channels:delete", async (done: Function) => {
+  socket.on("broadcasts:join", async (channelId: string, done: Function) => {
     try {
-      const channel = await prisma.channel.delete({
-        where: { broadcasterUsername: user.username },
-      });
-      console.log(`channel deleted: ${channel.title}`);
-      done({ success: true });
-    } catch (err) {
-      done({ success: false, message: err.message });
-    }
-  });
-
-  socket.on("channels:join", async (broadcaster: string, done: Function) => {
-    try {
-      const channel = await prisma.channel.update({
-        where: { broadcasterUsername: broadcaster },
-        data: { viewers: { increment: 1 } },
+      const channel = await prisma.channel.findFirst({
+        where: {
+          id: channelId,
+        },
       });
 
       if (!channel) {
-        done({ success: false, message: "Channel is not online." });
-        return;
+        return done({ success: false, message: "Channel not found" });
       }
 
-      socket.join(broadcaster);
-      socket.to(broadcaster).emit("channels:joined", user.username);
-      socket.to(broadcaster).emit("p2p:joined", socket.id);
-      console.log(`${user.username} joined ${broadcaster}'s channel.`);
+      const channelKey = getChannelKey(channel.id);
+      const isOnLive = await redisConnection.EXISTS(channelKey);
+      if (!isOnLive) {
+        return done({ success: false, message: "This channel is offline" });
+      }
+
+      await redisConnection.HINCRBY(channelKey, "viewers", 1);
+
+      socket.join(channelId);
+      socket.to(channelId).emit("broadcasts:joined", user.username);
+      socket.to(channelId).emit("p2p:joined", socket.id);
+      console.log(`${user.username} joined ${channel.name}`);
       done({ success: true });
     } catch (err) {
       done({ success: false, message: err.message });
     }
   });
 
-  socket.on("channels:leave", async (broadcaster: string, done: Function) => {
+  socket.on("broadcasts:leave", async (channelId: string, done: Function) => {
     try {
-      const channel = await prisma.channel.update({
-        where: { broadcasterUsername: broadcaster },
-        data: { viewers: { decrement: 1 } },
+      const channel = await prisma.channel.findFirst({
+        where: {
+          id: channelId,
+        },
       });
 
       if (!channel) {
-        done({ success: false, message: "Channel is not online." });
-        return;
+        return done({ success: false, message: "Channel not found" });
       }
 
-      socket.to(broadcaster).emit("channels:left", user.username);
-      socket.to(broadcaster).emit("p2p:left", socket.id);
-      socket.leave(broadcaster);
-      console.log(`${user.username} left ${broadcaster}'r channel.`);
+      const channelKey = getChannelKey(channel.id);
+      const isOnLive = await redisConnection.EXISTS(channelKey);
+      if (!isOnLive) {
+        return done({ success: false, message: "This channel is offline" });
+      }
+
+      await redisConnection.HINCRBY(channelKey, "viewers", -1);
+
+      socket.to(channelId).emit("broadcasts:left", user.username);
+      socket.to(channelId).emit("p2p:left", socket.id);
+      socket.leave(channelId);
+      console.log(`${user.username} left ${channel.name}`);
       done({ success: true });
     } catch (err) {
       done({ success: false, message: err.message });
@@ -97,17 +143,28 @@ export function registerChannelHandler(io: Server, socket: Socket) {
 
   socket.on(
     "messages:send",
-    async (broadcaster: string, message: string, done: Function) => {
+    async (channelId: string, message: string, done: Function) => {
       try {
         const filteredMessage = filterSentence(message);
+
+        const channelKey = getChannelKey(channelId);
+        const isOnLive = await redisConnection.EXISTS(channelKey);
+        if (!isOnLive) {
+          return done({ success: false, message: "This channel is offline" });
+        }
+
+        const broadcastJson = await redisConnection.HGET(channelKey, "broadcast");
+        const broadcast: Broadcast = JSON.parse(broadcastJson);
+
         socket
-          .to(broadcaster)
+          .to(channelId)
           .emit(
             "messages:sent",
             user.username,
             filteredMessage,
-            broadcaster === user.username,
+            broadcast.ownerId === user.id,
           );
+        console.log(`${user.username} sent a message to ${channelId}: ${message}`);
         done({ success: true });
       } catch (err) {
         done({ success: false, message: err.message });
@@ -117,24 +174,22 @@ export function registerChannelHandler(io: Server, socket: Socket) {
 }
 
 export function registerP2PConnectionHandler(io: Server, socket: Socket) {
-  socket.on(
-    "p2p:offer",
-    (broadcaster: string, offer: RTCSessionDescription) => {
-      console.log(`offer from ${socket.id} to ${broadcaster}`);
-      socket.to(broadcaster).emit("p2p:offer", offer);
-    },
-  );
+  socket.on("p2p:offer", (channelId: string, offer: RTCSessionDescription) => {
+    console.log(`offer from ${socket.id} to ${channelId}`);
+    socket.to(channelId).emit("p2p:offer", offer);
+  });
 
   socket.on(
     "p2p:answer",
-    (broadcaster: string, answer: RTCSessionDescription) => {
-      console.log(`answer from ${socket.id} to ${broadcaster}`);
-      socket.to(broadcaster).emit("p2p:answer", socket.id, answer);
+    (channelId: string, answer: RTCSessionDescription) => {
+      console.log(`answer from ${socket.id} to ${channelId}`);
+      socket.to(channelId).emit("p2p:answer", socket.id, answer);
     },
   );
 
-  socket.on("p2p:ice", (broadcaster: string, ice: RTCIceCandidate) => {
-    console.log(`ice from ${socket.id} to ${broadcaster}`);
-    socket.to(broadcaster).emit("p2p:ice", socket.id, ice);
+  socket.on("p2p:ice", (channelId: string, ice: RTCIceCandidate) => {
+    console.log(`ice from ${socket.id} to ${channelId}`);
+    console.log(ice);
+    socket.to(channelId).emit("p2p:ice", socket.id, ice);
   });
 }

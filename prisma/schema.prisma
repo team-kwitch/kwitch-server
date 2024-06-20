@@ -30,12 +30,12 @@ model Session {
 }
 
 model Channel {
-  broadcaster         User     @relation(fields: [broadcasterUsername], references: [username])
-  broadcasterUsername String   @id @map("broadcaster_username")
-  title               String
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
-  viewers             Int      @default(1)
+  id          String      @id @default(uuid()) @map("channel_id")
+  name        String
+  description String?
+  imageUrl    String?     @map("image_url")
+  owner       User        @relation(fields: [ownerId], references: [id])
+  ownerId     Int         @unique @map("owner_id")
 
   @@map("channels")
 }

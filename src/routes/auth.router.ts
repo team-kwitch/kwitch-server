@@ -6,9 +6,6 @@ import prisma from "../lib/prisma";
 
 const authRouter = express.Router();
 
-/**
- * 회원가입
- */
 authRouter.post("/sign-up", async (req: Request, res: Response) => {
   try {
     const { username, password }: { username: string; password: string } =
@@ -16,30 +13,36 @@ authRouter.post("/sign-up", async (req: Request, res: Response) => {
 
     const checkUser = await prisma.user.findUnique({ where: { username } });
     if (checkUser) {
-      return res.status(400).json({ message: "이미 존재하는 아이디입니다." });
+      return res.status(400).json({ message: "username already exists" });
     }
 
     const salt = bcrypt.genSaltSync(12);
     const hashedPassword = bcrypt.hashSync(password, salt);
 
-    await prisma.user.create({
+    const createdUser = await prisma.user.create({
       data: {
         username,
         password: hashedPassword,
         salt,
+        channel: {
+          create: {
+            name: username,
+          },
+        },
       },
     });
 
-    res.json({ result: true, message: "회원가입이 완료되었습니다." });
+    res.json({
+      result: true,
+      message: "successfully created user",
+      data: { user: createdUser },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
 
-/**
- * 로그인
- */
 authRouter.post("/sign-in", async (req: Request, res: Response) => {
   try {
     passport.authenticate("local", (authErr, user, info) => {
@@ -57,7 +60,7 @@ authRouter.post("/sign-in", async (req: Request, res: Response) => {
         }
         return res.json({
           result: true,
-          message: "로그인 성공",
+          message: "successfully logged in",
           user: { id: user.id, username: user.username },
         });
       });
@@ -73,7 +76,7 @@ authRouter.post("/sign-out", (req: Request, res: Response, next) => {
     if (err) {
       next(err);
     }
-    res.json({ result: true, message: "Successfully logged out." });
+    res.json({ result: true, message: "Successfully logged out" });
   });
 });
 
