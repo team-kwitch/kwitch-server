@@ -1,5 +1,6 @@
 import { PrismaSessionStore } from "@quixo3/prisma-session-store";
 import bodyParser from "body-parser";
+import cors from "cors";
 import express, { Request } from "express";
 import session from "express-session";
 import http from "http";
@@ -22,8 +23,6 @@ import {
 } from "./socket";
 
 const app = express();
-const httpServer = http.createServer(app);
-const io = new Server(httpServer);
 
 const sessionMiddleware = session({
   secret: SECRET_KEY,
@@ -39,12 +38,23 @@ const sessionMiddleware = session({
   },
 });
 
+const corsOption = {
+  origin: ["http://localhost:3000", "https://kwitch.vercel.app"],
+  credentials: true,
+};
+
+app.use(cors(corsOption));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(rootRouter);
+
+const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
+  cors: corsOption,
+});
 
 const wrap = (middleware) => (socket, next) =>
   middleware(socket.request, {}, next);
