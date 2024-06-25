@@ -4,7 +4,7 @@ services:
     container_name: kwitch-mysql
     hostname: mysql
     ports:
-      - "3306:3306"
+      - "10001:3306"
     restart: "unless-stopped"
     environment:
       MYSQL_DATABASE: kwitch
@@ -27,7 +27,7 @@ services:
     hostname: redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "10002:6379"
     healthcheck:
       test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
       interval: 5s
@@ -41,7 +41,7 @@ services:
     container_name: kwitch-api-server
     hostname: api-server
     ports:
-      - "8000:8000"
+      - "10003:8000"
     depends_on:
       mysql:
         condition: service_healthy
@@ -51,6 +51,23 @@ services:
       - .env
     networks:
       - kwitch-internal
+      - proxy-internal
+
+  caddy:
+    image: caddy:2.8.4-alpine
+    container_name: kwitch-caddy
+    hostname: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /data/caddy/Caddyfile:/etc/caddy/Caddyfile
+    networks:
+      - proxy-internal
 
 networks:
   kwitch-internal:
+    driver: bridge
+  proxy-internal:
+    driver: bridge 
