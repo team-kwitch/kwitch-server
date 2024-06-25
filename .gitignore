@@ -129,3 +129,5 @@ dist
 .idea
 
 built
+
+data/caddy
