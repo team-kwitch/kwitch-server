@@ -1,3 +1,7 @@
 kwitch.online {
+  tls ehensnfl@gmail.com
   reverse_proxy api-server:10003
+  header_up Host {host}
+  header_up X-Real-IP {remote}
+  header_up X-Forwarded-Proto {scheme}
 }
