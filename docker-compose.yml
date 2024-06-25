@@ -63,7 +63,7 @@ services:
       - "443:443/udp"
     volumes:
       - $PWD/Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
+      - $PWD/caddy_data:/data
     depends_on:
       - api-server
     networks:
