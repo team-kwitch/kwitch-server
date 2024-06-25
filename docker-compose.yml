@@ -66,6 +66,8 @@ services:
       - "443:443/udp"
     volumes:
       - $PWD/Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - api-server
     networks:
       - proxy-internal
 
