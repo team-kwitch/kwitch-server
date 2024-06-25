@@ -32,7 +32,7 @@ const verifyCallback = async (
 };
 
 const localStrategy = new LocalStrategy(
-  { usernameField: "username", passwordField: "password" },
+  { usernameField: "username", passwordField: "password", session: true },
   verifyCallback,
 );
 
@@ -42,10 +42,10 @@ passport.serializeUser((user: User, done) => {
   done(null, user.id);
 });
 
-passport.deserializeUser((id: number, done) => {
+passport.deserializeUser((userId: number, done) => {
   prisma.user
     .findFirst({
-      where: { id: id },
+      where: { id: userId },
       include: { channel: true },
     })
     .then((user) => done(null, user))

@@ -43,36 +43,31 @@ authRouter.post("/sign-up", async (req: Request, res: Response) => {
   }
 });
 
-authRouter.post("/sign-in", async (req: Request, res: Response) => {
-  try {
-    passport.authenticate("local", (authErr, user, info) => {
-      if (authErr) {
-        return res.status(500).json({ message: authErr.message });
-      }
+authRouter.post("/sign-in", (req: Request, res: Response, next) => {
+  passport.authenticate("local", (authErr, user, info) => {
+    if (authErr) {
+      return res.status(500).json({ message: authErr.message });
+    }
 
-      if (!user) {
-        return res.status(400).json({ message: info.message });
-      }
+    if (!user) {
+      return res.status(400).json({ message: info.message });
+    }
 
-      req.login(user, (loginErr) => {
-        if (loginErr) {
-          return res.status(500).json({ message: loginErr.message });
-        }
-        return res.json({
-          result: true,
-          message: "successfully logged in",
-          user: { id: user.id, username: user.username },
-        });
+    return req.logIn(user, (loginErr) => {
+      if (loginErr) {
+        return res.status(500).json({ message: loginErr.message });
+      }
+      return res.json({
+        result: true,
+        message: "successfully logged in",
+        user: { id: user.id, username: user.username },
       });
-    })(req, res);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: err.message });
-  }
+    });
+  })(req, res, next);
 });
 
 authRouter.post("/sign-out", (req: Request, res: Response, next) => {
-  req.logout((err) => {
+  req.logOut((err) => {
     if (err) {
       next(err);
     }

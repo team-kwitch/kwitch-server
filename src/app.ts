@@ -1,8 +1,9 @@
 import { PrismaSessionStore } from "@quixo3/prisma-session-store";
 import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { Request } from "express";
-import session from "express-session";
+import session, { Session } from "express-session";
 import http from "http";
 import passport from "passport";
 import { Server, Socket } from "socket.io";
@@ -11,8 +12,6 @@ import rootRouter from "@routes/index";
 
 import "@lib/passport";
 import prisma from "@lib/prisma";
-
-import { SECRET_KEY, SERVER_PORT } from "@utils/env";
 
 import { Broadcast } from "../typings";
 import { redisConnection } from "./lib/redis";
@@ -24,29 +23,32 @@ import {
 
 const app = express();
 
-const sessionMiddleware = session({
-  secret: SECRET_KEY,
+const sessionOptions: session.SessionOptions = {
+  secret: process.env.SECRET_KEY,
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   store: new PrismaSessionStore(prisma, {
     checkPeriod: 2 * 60 * 1000, //ms
     dbRecordIdIsSessionId: true,
     dbRecordIdFunction: undefined,
   }),
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24, // Equals 1 day (1 day * 24 hr/1 day * 60 min/1 hr * 60 sec/1 min * 1000 ms / 1 sec)
+    maxAge: 1000 * 60 * 60 * 24,
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
   },
-});
+};
 
-const corsOption = {
+const corsOption: cors.CorsOptions = {
   origin: ["http://localhost:3000", "https://kwitch.vercel.app"],
   credentials: true,
 };
 
 app.use(cors(corsOption));
+app.use(cookieParser(process.env.SECRET_KEY));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(sessionMiddleware);
+app.use(session(sessionOptions));
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(rootRouter);
@@ -59,7 +61,8 @@ const io = new Server(httpServer, {
 const wrap = (middleware) => (socket, next) =>
   middleware(socket.request, {}, next);
 
-io.use(wrap(sessionMiddleware));
+io.use(wrap(cookieParser()));
+io.use(wrap(session(sessionOptions)));
 io.use(wrap(passport.initialize()));
 io.use(wrap(passport.session()));
 
@@ -115,7 +118,9 @@ io.on("connection", (socket: Socket) => {
   });
 });
 
-httpServer.listen(SERVER_PORT, () => {
-  console.log(`Server is running on port ${SERVER_PORT}`);
+const PORT = process.env.PORT || 8000;
+
+httpServer.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
   redisConnection.FLUSHALL();
 });
