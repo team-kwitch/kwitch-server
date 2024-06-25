@@ -66,8 +66,6 @@ services:
       - "443:443/udp"
     volumes:
       - $PWD/Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
     networks:
       - proxy-internal
 
@@ -76,8 +74,3 @@ networks:
     driver: bridge
   proxy-internal:
     driver: bridge 
-
-volumes:
-  caddy_data:
-    external: true
-  caddy_config:
