@@ -58,12 +58,16 @@ services:
     container_name: kwitch-caddy
     hostname: caddy
     restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - ./data/caddy:/data
+      - $PWD/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
     networks:
       - proxy-internal
 
@@ -72,3 +76,8 @@ networks:
     driver: bridge
   proxy-internal:
     driver: bridge 
+
+volumes:
+  caddy_data:
+    external: true
+  caddy_config:
