@@ -1,4 +1,12 @@
 kwitch.online {
   tls ehensnfl@gmail.com
-  reverse_proxy api-server:8000
+
+  @api {
+    path /api/*
+  }
+  reverse_proxy @api api-server:8000
+
+  reverse_proxy {
+    to kwitch.vercel.app
+  }
 }
