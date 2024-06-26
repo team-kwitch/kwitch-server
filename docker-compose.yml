@@ -52,5 +52,22 @@ services:
     networks:
       - kwitch-internal
 
+  caddy:
+    image: caddy:2.8.4-alpine
+    container_name: kwitch-caddy
+    hostname: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - $PWD/Caddyfile:/etc/caddy/Caddyfile
+      - $PWD/caddy_data:/data
+    depends_on:
+      - api-server
+    networks:
+      - kwitch-internal
+
 networks:
   kwitch-internal:

@@ -34,13 +34,13 @@ const sessionOptions: session.SessionOptions = {
   }),
   cookie: {
     maxAge: 1000 * 60 * 60 * 24,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     httpOnly: true,
   },
 };
 
 const corsOption: cors.CorsOptions = {
-  origin: ["http://localhost:3000", "https://kwitch.vercel.app"],
+  origin: "https://kwitch.vercel.app",
   credentials: true,
 };
 

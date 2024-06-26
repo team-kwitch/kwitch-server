@@ -1,0 +1,4 @@
+kwitch.online {
+  tls ehensnfl@gmail.com
+  reverse_proxy api-server:8000
+}
