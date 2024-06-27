@@ -1,8 +1,0 @@
-kwitch.online {
-  tls ehensnfl@gmail.com
-  reverse_proxy {
-    to api-server:8000
-    header_upstream Set-Cookie {http.request.cookie.Set-Cookie}
-    header_downstream Set-Cookie {http.response.Set-Cookie}
-  }
-}
