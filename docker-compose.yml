@@ -54,3 +54,6 @@ services:
 
 networks:
   kwitch-internal:
+    driver: bridge
+  caddy_proxy:
+    external: true
