@@ -17,6 +17,8 @@ COPY src ./src
 COPY typings ./typings
 RUN npm run build
 
+ENV NODE_ENV=production
+
 EXPOSE 8000
 ENTRYPOINT npm run prisma:migrate:deploy && npm run start
 

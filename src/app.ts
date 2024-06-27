@@ -42,7 +42,7 @@ const sessionOptions: session.SessionOptions = {
   }),
   cookie: {
     maxAge: 1000 * 60 * 60 * 24,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     httpOnly: true,
   },
 };
