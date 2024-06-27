@@ -39,12 +39,6 @@ const sessionOptions: session.SessionOptions = {
   },
 };
 
-const corsOption: cors.CorsOptions = {
-  origin: "https://kwitch.vercel.app",
-  credentials: true,
-};
-
-app.use(cors(corsOption));
 app.use(cookieParser(process.env.SECRET_KEY));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -54,9 +48,7 @@ app.use(passport.session());
 app.use(rootRouter);
 
 const httpServer = http.createServer(app);
-const io = new Server(httpServer, {
-  cors: corsOption,
-});
+const io = new Server(httpServer);
 
 const wrap = (middleware) => (socket, next) =>
   middleware(socket.request, {}, next);
