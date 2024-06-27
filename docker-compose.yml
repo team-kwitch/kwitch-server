@@ -19,7 +19,7 @@ services:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
     networks:
-      - kwitch-internal
+      - internal-network
   
   redis:
     image: redis:7.2.0-alpine
@@ -34,7 +34,7 @@ services:
       timeout: 3s
       retries: 10
     networks:
-      - kwitch-internal
+      - internal-network
 
   api-server:
     image: sukjuhong/kwitch-api-server:latest
@@ -50,11 +50,11 @@ services:
     env_file:
       - .env
     networks:
-      - kwitch-internal
-      - caddy_proxy
+      - internal-network
+      - proxy-network
 
 networks:
-  kwitch-internal:
+  internal-network:
     driver: bridge
-  caddy_proxy:
+  proxy-network:
     external: true
