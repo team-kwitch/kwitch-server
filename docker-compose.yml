@@ -51,6 +51,7 @@ services:
       - .env
     networks:
       - kwitch-internal
+      - caddy_proxy
 
 networks:
   kwitch-internal:
