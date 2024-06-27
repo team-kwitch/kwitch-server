@@ -23,6 +23,11 @@ import {
 
 const app = express();
 
+const corsOption: cors.CorsOptions = {
+  origin: "https://kwitch.online",
+  credentials: true,
+};
+
 const sessionOptions: session.SessionOptions = {
   secret: process.env.SECRET_KEY,
   resave: false,
