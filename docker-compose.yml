@@ -37,7 +37,7 @@ services:
       - kwitch-internal
 
   api-server:
-    build: .
+    image: sukjuhong/kwitch-api-server:latest
     container_name: kwitch-api-server
     hostname: api-server
     ports:
