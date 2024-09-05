@@ -3,23 +3,21 @@ import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { Request } from "express";
-import session, { Session } from "express-session";
+import session from "express-session";
 import http from "http";
 import passport from "passport";
+import "reflect-metadata";
 import { Server, Socket } from "socket.io";
+
+import "@/lib/Passport";
+import prisma from "@/lib/Prisma";
 
 import rootRouter from "@routes/index";
 
-import "@lib/passport";
-import prisma from "@lib/prisma";
-
-import { Broadcast } from "../typings";
-import { redisConnection } from "./lib/redis";
-import {
-  getChannelKey,
-  registerBroadcastHandler,
-  registerP2PConnectionHandler,
-} from "./socket";
+import { redisConnection } from "./lib/Redis";
+import { registerBroadcastHandler } from "./socket/BroadcastHandler";
+import { registerDisconnectingHandler } from "./socket/DisconnectingHandler";
+import { registerP2PConnectionHandler } from "./socket/P2PConnectionHandler";
 
 const app = express();
 if (process.env.NODE_ENV === "production") {
@@ -27,7 +25,7 @@ if (process.env.NODE_ENV === "production") {
 }
 
 const corsOption: cors.CorsOptions = {
-  origin: "https://kwitch.online",
+  origin: ["https://kwitch.online", "http://localhost:3000"],
   credentials: true,
 };
 
@@ -83,47 +81,14 @@ io.use((socket: Socket, next) => {
 });
 
 io.on("connection", (socket: Socket) => {
-  const req = socket.request as Request;
-  const user = req.user;
-
   registerBroadcastHandler(io, socket);
   registerP2PConnectionHandler(io, socket);
-
-  socket.on("disconnecting", async () => {
-    console.log(`socket disconnected: ${socket.id}`);
-
-    socket.rooms.forEach(async (roomName: string) => {
-      if (roomName === socket.id) {
-        return;
-      }
-
-      const channelKey = getChannelKey(roomName);
-      const isOnLive = await redisConnection.exists(channelKey);
-
-      if (!isOnLive) {
-        return;
-      }
-
-      const broadcast: Broadcast = JSON.parse(
-        await redisConnection.HGET(channelKey, "broadcast"),
-      );
-
-      if (broadcast.ownerId === user.id) {
-        await redisConnection.DEL(channelKey);
-        socket.to(broadcast.roomName).emit("broadcasts:destroy");
-        io.sockets.socketsLeave(roomName);
-        io.emit("broadcasts:update");
-        console.log("broadcast is automatically ended");
-      } else {
-        await redisConnection.HINCRBY(channelKey, "viewers", -1);
-      }
-    });
-  });
+  registerDisconnectingHandler(io, socket);
 });
 
 const PORT = process.env.PORT || 8000;
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, async () => {
+  await redisConnection.FLUSHALL();
   console.log(`Server is running on port ${PORT}`);
-  redisConnection.FLUSHALL();
 });

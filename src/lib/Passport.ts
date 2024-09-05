@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import passport from "passport";
 import passportLocal from "passport-local";
 
-import prisma from "./prisma";
+import prisma from "./Prisma";
 
 const LocalStrategy = passportLocal.Strategy;
 
