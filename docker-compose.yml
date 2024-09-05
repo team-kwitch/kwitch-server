@@ -1,8 +1,8 @@
-services: 
-  postgresql:
+services:
+  postgres:
     image: postgres:16-alpine
-    container_name: kwitch-postgresql
-    hostname: postgresql
+    container_name: kwitch-postgres
+    hostname: postgres
     restart: unless-stopped
     env_file:
       - .env
@@ -11,7 +11,12 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - ./volumes/postgresql-data:/var/lib/postgresql/data
+      - ./volumes/postgres-data:/var/lib/postgresql/data:rw
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - internal-network
 
@@ -37,6 +42,8 @@ services:
     ports:
       - "8000:8000"
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
     env_file:
