@@ -1,56 +1,33 @@
-import bcrypt from "bcrypt";
 import express, { Request, Response } from "express";
 import passport from "passport";
+import Container from "typedi";
 
-import prisma from "../lib/prisma";
+import AuthService from "@/services/AuthService";
 
 const authRouter = express.Router();
+const userService = Container.get(AuthService);
 
 authRouter.post("/sign-up", async (req: Request, res: Response) => {
-  try {
-    const { username, password }: { username: string; password: string } =
-      req.body;
+  const { username, password }: { username: string; password: string } =
+    req.body;
 
-    const checkUser = await prisma.user.findUnique({ where: { username } });
-    if (checkUser) {
-      return res.status(400).json({ message: "username already exists" });
-    }
-
-    const salt = bcrypt.genSaltSync(12);
-    const hashedPassword = bcrypt.hashSync(password, salt);
-
-    const createdUser = await prisma.user.create({
-      data: {
-        username,
-        password: hashedPassword,
-        salt,
-        channel: {
-          create: {
-            name: username,
-          },
-        },
-      },
-    });
-
-    res.json({
-      result: true,
-      message: "successfully created user",
-      data: { user: createdUser },
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: err.message });
-  }
+  const createdUser = await userService.signUp(username, password);
+  res.json({
+    result: true,
+    message: "successfully created user",
+    data: { user: createdUser },
+  });
 });
 
 authRouter.post("/sign-in", (req: Request, res: Response, next) => {
   passport.authenticate("local", (authErr, user, info) => {
     if (authErr) {
+      console.error(authErr);
       return res.status(500).json({ message: authErr.message });
     }
 
     if (!user) {
-      return res.status(400).json({ message: info.message });
+      return res.status(401).json({ message: info.message });
     }
 
     return req.logIn(user, (loginErr) => {

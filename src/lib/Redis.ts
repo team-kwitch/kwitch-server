@@ -1,6 +1,6 @@
 import { type RedisClientType, createClient } from "redis";
 
-import { REDIS_HOST, REDIS_PORT } from "@utils/env";
+import { REDIS_HOST, REDIS_PORT } from "@/utils/Env";
 
 class Redis {
   host: string;

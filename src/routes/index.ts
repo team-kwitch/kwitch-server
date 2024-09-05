@@ -1,8 +1,8 @@
 import express from "express";
 
-import authRouter from "./auth.router";
-import channelRouter from "./channel.router";
-import userRouter from "./user.router";
+import authRouter from "./AuthRouter";
+import channelRouter from "./ChannelRouter";
+import userRouter from "./UserRouter";
 
 const rootRouter = express.Router();
 

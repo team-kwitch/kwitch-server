@@ -4,6 +4,8 @@
     "target": "ES6",
     "module": "CommonJS",
     "esModuleInterop": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
     "baseUrl": "./src",
     "paths": {
       "@/*": ["./*"],
@@ -18,5 +20,5 @@
   "ts-node": {
     "files": true,
     "require": ["tsconfig-paths/register"]
-  },
+  }
 }
