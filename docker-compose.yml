@@ -1,4 +1,20 @@
 services: 
+  postgresql:
+    image: postgres:16-alpine
+    container_name: kwitch-postgresql
+    hostname: postgresql
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./volumes/postgresql-data:/var/lib/postgresql/data
+    networks:
+      - internal-network
+
   redis:
     image: redis:7.2.0-alpine
     container_name: kwitch-redis
