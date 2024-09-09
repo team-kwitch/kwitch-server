@@ -18,6 +18,7 @@ import { redisConnection } from "./lib/Redis";
 import { registerBroadcastHandler } from "./socket/BroadcastHandler";
 import { registerDisconnectingHandler } from "./socket/DisconnectingHandler";
 import { registerP2PConnectionHandler } from "./socket/P2PConnectionHandler";
+import { registerSFUConnectionHandler } from "./socket/SFUConnectionHandler";
 
 const app = express();
 if (process.env.NODE_ENV === "production") {
@@ -82,7 +83,7 @@ io.use((socket: Socket, next) => {
 
 io.on("connection", (socket: Socket) => {
   registerBroadcastHandler(io, socket);
-  registerP2PConnectionHandler(io, socket);
+  registerSFUConnectionHandler(io, socket);
   registerDisconnectingHandler(io, socket);
 });
 
