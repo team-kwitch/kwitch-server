@@ -2,24 +2,33 @@ import { PrismaSessionStore } from "@quixo3/prisma-session-store";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import express, { Request } from "express";
+import { Request } from "express";
+import express from "express";
 import session from "express-session";
 import http from "http";
 import passport from "passport";
 import "reflect-metadata";
+import {
+  Action,
+  createExpressServer,
+  useContainer,
+  useExpressServer,
+} from "routing-controllers";
 import { Server, Socket } from "socket.io";
 
 import "@/lib/passport";
 import prisma from "@/lib/prisma";
 
-import rootRouter from "@routes/index";
-
+import { config } from "./config";
+import { AuthController } from "./controllers/AuthController";
+import { ChannelController } from "./controllers/ChannelController";
+import { UserController } from "./controllers/UserController";
+import { createWorker } from "./lib/mediasoup";
 import { redisConnection } from "./lib/redis";
-import { registerDisconnectingHandler } from "./socket/disconnecting.handler";
 import { BroadcastHandler } from "./socket/BroadcastHandler";
 import { SFUConnectionHandler } from "./socket/SFUConnectionHandler";
-import { createWorker } from "./lib/mediasoup";
-import { config } from "./config";
+import { registerDisconnectingHandler } from "./socket/disconnecting.handler";
+import Container from "typedi";
 
 const app = express();
 if (process.env.NODE_ENV === "production") {
@@ -47,6 +56,8 @@ const sessionOptions: session.SessionOptions = {
   },
 };
 
+useContainer(Container);
+
 app.use(cors(corsOption));
 app.use(cookieParser(process.env.SECRET_KEY));
 app.use(bodyParser.json());
@@ -54,7 +65,22 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(session(sessionOptions));
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(rootRouter);
+useExpressServer(app, {
+  authorizationChecker: (action: Action) => new Promise<boolean>((resolve, reject) => {
+    passport.authenticate('session', (err, user) => {
+      if (err) {
+        return reject(err);
+      }
+      if (!user) {
+        return resolve(false);
+      }
+      action.request.user = user;
+      return resolve(true);
+    })(action.request, action.response, action.next);
+  }),
+  currentUserChecker: (action: Action) => action.request.user,
+  controllers: [AuthController, UserController, ChannelController],
+});
 
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
@@ -93,5 +119,5 @@ httpServer.listen(config.app.port, async () => {
 
   await createWorker();
 
-  console.log(`Server is running on port ${config.app.port}`);
+  console.log(`server is running on port ${config.app.port}`);
 });
