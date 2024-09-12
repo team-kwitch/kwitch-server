@@ -1,10 +1,15 @@
 import * as mediasoup from "mediasoup";
 
 export const config: {
+  app: {
+    port: number;
+  };
   mediasoup: {
     mediaCodecs: mediasoup.types.RtpCodecCapability[];
+    transportOptions: mediasoup.types.WebRtcTransportOptions;
   };
 } = {
+  app: { port: parseInt(process.env.PORT || "8000", 10) },
   mediasoup: {
     mediaCodecs: [
       {
@@ -22,5 +27,16 @@ export const config: {
         },
       },
     ],
+    transportOptions: {
+      listenIps: [
+        {
+          ip: process.env.LISTEN_IP || "127.0.0.1",
+          announcedIp: process.env.LISTEN_ANNOUNCED_IP || null,
+        },
+      ],
+      enableUdp: true,
+      enableTcp: true,
+      preferUdp: true,
+    },
   },
 };

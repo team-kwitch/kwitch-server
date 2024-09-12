@@ -1,7 +1,7 @@
 import { Channel, User } from "@prisma/client";
 import express, { Request, Response } from "express";
 
-import { isAuthenticated } from "../middleware/Authentication";
+import { isAuthenticated } from "../middleware/authentication";
 
 const userRouter = express.Router();
 

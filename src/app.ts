@@ -15,10 +15,11 @@ import prisma from "@/lib/prisma";
 import rootRouter from "@routes/index";
 
 import { redisConnection } from "./lib/redis";
-import { registerBroadcastHandler } from "./socket/broadcast.handler";
 import { registerDisconnectingHandler } from "./socket/disconnecting.handler";
+import { BroadcastHandler } from "./socket/BroadcastHandler";
+import { SFUConnectionHandler } from "./socket/SFUConnectionHandler";
 import { createWorker } from "./lib/mediasoup";
-import { registerSFUConnectionHandler } from "./socket/SFUConnection.handler";
+import { config } from "./config";
 
 const app = express();
 if (process.env.NODE_ENV === "production") {
@@ -82,17 +83,15 @@ io.use((socket: Socket, next) => {
 });
 
 io.on("connection", (socket: Socket) => {
-  registerBroadcastHandler(io, socket);
-  registerSFUConnectionHandler(io, socket);
+  BroadcastHandler.register(io, socket);
+  SFUConnectionHandler.register(io, socket);
   registerDisconnectingHandler(io, socket);
 });
 
-const PORT = process.env.PORT || 8000;
-
-httpServer.listen(PORT, async () => {
+httpServer.listen(config.app.port, async () => {
   await redisConnection.FLUSHALL();
 
   await createWorker();
 
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${config.app.port}`);
 });

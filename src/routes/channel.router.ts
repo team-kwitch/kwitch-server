@@ -1,12 +1,13 @@
 import { Request, Response, Router } from "express";
 
 import Container from "typedi";
-import { ChannelService } from "@/services/channel.service";
+import { ChannelService } from "@/services/ChannelService";
 
 const channelRouter = Router();
-const channelService = Container.get(ChannelService);
 
 channelRouter.get("/live", async (req: Request, res: Response) => {
+  const channelService = Container.get(ChannelService);
+
   const { cursorStr } = req.query;
   let cursor = parseInt(cursorStr as string, 10);
 
@@ -19,6 +20,7 @@ channelRouter.get("/live", async (req: Request, res: Response) => {
 });
 
 channelRouter.get("/:channelId", async (req: Request, res: Response) => {
+  const channelService = Container.get(ChannelService);
   const { channelId } = req.params;
 
   if (!channelId) {
