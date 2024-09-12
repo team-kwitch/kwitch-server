@@ -36,8 +36,6 @@ const mediaCodecs: mediasoupTypes.RtpCodecCapability[] = [
   },
 ];
 
-createWorker();
-
 export const registerSFUConnectionHandler = async (
   io: Server,
   socket: Socket,

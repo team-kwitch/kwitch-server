@@ -2,8 +2,8 @@ import { Server, Socket } from "socket.io";
 import Container from "typedi";
 import { Request } from "express";
 
-import { redisConnection } from "@/lib/Redis";
-import { ChannelService } from "@/services/ChannelService";
+import { redisConnection } from "@/lib/redis";
+import { ChannelService } from "@/services/channel.service";
 
 import { Broadcast, Channel } from "@prisma/client";
 

@@ -2,8 +2,8 @@ import { Request } from "express";
 import { Server, Socket } from "socket.io";
 import Container from "typedi";
 
-import { ChannelService } from "@/services/ChannelService";
-import { filterSentence } from "@/utils/ChatFilter";
+import { ChannelService } from "@/services/channel.service";
+import { filterSentence } from "@/utils/chatFilter";
 
 const channelService = Container.get(ChannelService);
 

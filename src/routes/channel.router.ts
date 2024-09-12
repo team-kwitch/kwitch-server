@@ -1,7 +1,7 @@
 import { Request, Response, Router } from "express";
 
 import Container from "typedi";
-import { ChannelService } from "@/services/ChannelService";
+import { ChannelService } from "@/services/channel.service";
 
 const channelRouter = Router();
 const channelService = Container.get(ChannelService);

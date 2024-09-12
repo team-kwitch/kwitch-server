@@ -9,16 +9,16 @@ import passport from "passport";
 import "reflect-metadata";
 import { Server, Socket } from "socket.io";
 
-import "@/lib/Passport";
-import prisma from "@/lib/Prisma";
+import "@/lib/passport";
+import prisma from "@/lib/prisma";
 
 import rootRouter from "@routes/index";
 
-import { redisConnection } from "./lib/Redis";
-import { registerBroadcastHandler } from "./socket/BroadcastHandler";
-import { registerDisconnectingHandler } from "./socket/DisconnectingHandler";
-import { registerP2PConnectionHandler } from "./socket/P2PConnectionHandler";
-import { registerSFUConnectionHandler } from "./socket/SFUConnectionHandler";
+import { redisConnection } from "./lib/redis";
+import { registerBroadcastHandler } from "./socket/broadcast.handler";
+import { registerDisconnectingHandler } from "./socket/disconnecting.handler";
+import { createWorker } from "./lib/mediasoup";
+import { registerSFUConnectionHandler } from "./socket/SFUConnection.handler";
 
 const app = express();
 if (process.env.NODE_ENV === "production") {
@@ -91,5 +91,8 @@ const PORT = process.env.PORT || 8000;
 
 httpServer.listen(PORT, async () => {
   await redisConnection.FLUSHALL();
+
+  await createWorker();
+
   console.log(`Server is running on port ${PORT}`);
 });

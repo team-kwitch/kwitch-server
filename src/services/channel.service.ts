@@ -1,8 +1,8 @@
 import { Channel, User } from "@prisma/client";
 import { Service } from "typedi";
 
-import prisma from "@/lib/Prisma";
-import { redisConnection } from "@/lib/Redis";
+import prisma from "@/lib/prisma";
+import { redisConnection } from "@/lib/redis";
 
 import type { Broadcast } from "../../typings";
 

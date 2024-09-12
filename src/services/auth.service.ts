@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { Service } from "typedi";
 
-import prisma from "../lib/Prisma";
+import prisma from "../lib/prisma";
 
 @Service()
 export default class AuthService {

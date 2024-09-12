@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import Container from "typedi";
 
-import AuthService from "@/services/AuthService";
+import AuthService from "@/services/auth.service";
 
 const authRouter = express.Router();
 const userService = Container.get(AuthService);
