@@ -1,7 +1,10 @@
-FROM node:18-alpine
+FROM node:18
 RUN chown node:node .
-USER node
 
+# mediasoup requirements
+RUN apt update && apt install -y python3-pip build-essential
+
+USER node
 # npm install
 WORKDIR /srv/app
 COPY package*.json ./
