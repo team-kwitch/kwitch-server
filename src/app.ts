@@ -63,6 +63,14 @@ app.use(session(sessionOptions));
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({
+    success: false,
+    message: "Internal Server Error",
+  });
+})
+
 useExpressServer(app, {
   routePrefix: "/api",
   controllers: [__dirname + "/controllers/*.ts"],
