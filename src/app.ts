@@ -63,17 +63,9 @@ app.use(session(sessionOptions));
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({
-    success: false,
-    message: "Internal Server Error",
-  });
-})
-
 useExpressServer(app, {
   routePrefix: "/api",
-  controllers: [__dirname + "/controllers/*.ts"],
+  controllers: [__dirname + "/controllers/*.ts", __dirname + "/controllers/*.js"],
   authorizationChecker: async (action, roles) => {
     const request = action.request as Request;
     return request.isAuthenticated();
