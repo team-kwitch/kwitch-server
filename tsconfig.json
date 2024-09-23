@@ -9,13 +9,10 @@
     "baseUrl": "./src",
     "paths": {
       "@/*": ["./*"],
-      "@lib/*": ["./lib/*"],
-      "@routes/*": ["./routes/*"],
-      "@utils/*": ["./utils/*"]
     },
     "typeRoots": ["node_modules/@types", "./typings"]
   },
-  "include": ["./src/**/*.ts", "typings/**/*.d.ts"],
+  "include": ["./src/**/*.ts", "typings/**/*.d.ts", "typings/types.ts"],
   "exclude": ["node_modules", "dist"],
   "ts-node": {
     "files": true,

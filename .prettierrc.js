@@ -5,12 +5,9 @@ module.exports = {
   semi: true,
   importOrder: [
     "^@/(.*)$",
-    "^@routes/(.*)$",
-    "^@lib/(.*)$",
-    "^@utils/(.*)$",
     "^[./]",
   ],
   importOrderSeparation: true,
   importOrderSortSpecifiers: true,
-  importOrderParserPlugins: ["typescript", "decorators"],
+  importOrderParserPlugins: ["typescript", "classProperties", "decorators-legacy"],
 };

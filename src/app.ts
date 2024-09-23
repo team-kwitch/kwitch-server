@@ -2,24 +2,34 @@ import { PrismaSessionStore } from "@quixo3/prisma-session-store";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import express, { Request } from "express";
+import { Request } from "express";
 import session from "express-session";
 import http from "http";
 import passport from "passport";
 import "reflect-metadata";
+import express from "express";
+import {
+  ActionMetadata,
+  useContainer,
+  useExpressServer,
+} from "routing-controllers";
 import { Server, Socket } from "socket.io";
+import Container from "typedi";
 
-import "@/lib/Passport";
-import prisma from "@/lib/Prisma";
+import "@/lib/passport";
+import prisma from "@/lib/prisma";
 
-import rootRouter from "@routes/index";
+import { config } from "./config";
+import { createWorker } from "./lib/mediasoup";
+import { redisConnection } from "./lib/redis";
+import { socketHandlerToken } from "./socket";
+import { BroadcastHandler } from "./socket/BroadcastHandler";
+import { SFUConnectionHandler } from "./socket/SFUConnectionHandler";
 
-import { redisConnection } from "./lib/Redis";
-import { registerBroadcastHandler } from "./socket/BroadcastHandler";
-import { registerDisconnectingHandler } from "./socket/DisconnectingHandler";
-import { registerP2PConnectionHandler } from "./socket/P2PConnectionHandler";
+useContainer(Container);
 
 const app = express();
+
 if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
@@ -52,7 +62,19 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(session(sessionOptions));
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(rootRouter);
+
+useExpressServer(app, {
+  routePrefix: "/api",
+  controllers: [__dirname + "/controllers/*.ts"],
+  authorizationChecker: async (action, roles) => {
+    const request = action.request as Request;
+    return request.isAuthenticated();
+  },
+  currentUserChecker: async (action) => {
+    const request = action.request as Request;
+    return request.user;
+  }
+});
 
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
@@ -80,15 +102,17 @@ io.use((socket: Socket, next) => {
   }
 });
 
+Container.import([BroadcastHandler, SFUConnectionHandler]);
 io.on("connection", (socket: Socket) => {
-  registerBroadcastHandler(io, socket);
-  registerP2PConnectionHandler(io, socket);
-  registerDisconnectingHandler(io, socket);
+  Container.getMany(socketHandlerToken).forEach((handler) => {
+    handler.register(io, socket);
+  });
 });
 
-const PORT = process.env.PORT || 8000;
-
-httpServer.listen(PORT, async () => {
+httpServer.listen(config.app.port, async () => {
   await redisConnection.FLUSHALL();
-  console.log(`Server is running on port ${PORT}`);
+
+  await createWorker();
+
+  console.log(`server is running on port ${config.app.port}`);
 });
