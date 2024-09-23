@@ -7,12 +7,11 @@ import {
   Get,
   Req,
   Res,
-  UseBefore,
 } from "routing-controllers";
 import { Service } from "typedi";
 
 @Service()
-@Controller("/api/users")
+@Controller("/users")
 export class UserController {
   @Get("/me")
   @Authorized()
@@ -24,9 +23,9 @@ export class UserController {
     delete user.password;
     return res.json({
       success: true,
-      content: { 
-        user
-       },
+      content: {
+        user,
+      },
     });
   }
 }

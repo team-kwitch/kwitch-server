@@ -1,34 +1,26 @@
 import { Channel } from "@prisma/client";
 import * as mediasoup from "mediasoup";
-import { Socket } from "socket.io";
 
 import { config } from "@/config";
 
 import { getWorker } from ".";
 
 export interface Peer {
-  socket: Socket;
-  broadcastId: string;
-  transports: mediasoup.types.Transport[];
-  producers: mediasoup.types.Producer[];
-  consumers: mediasoup.types.Consumer[];
+  recvTransport: mediasoup.types.WebRtcTransport;
+  consumers: Map<string, mediasoup.types.Consumer>; // Map<consumerId, Consumer>
 }
 
 export interface Broadcaster {
-  channelId: string;
-  rtpCapabilities: mediasoup.types.RtpCapabilities;
-  producerTransport: mediasoup.types.Transport;
-  consumerTransport: mediasoup.types.Transport;
+  sendTransport: mediasoup.types.WebRtcTransport;
+  producers: Map<string, mediasoup.types.Producer>; // Map<producerId, Producer>
 }
 
 export default class Broadcast {
-  private readonly _router: mediasoup.types.Router;
-  private readonly _channel: Channel;
+  private readonly router: mediasoup.types.Router;
+  private readonly channel: Channel;
 
-  private _producerTransport: mediasoup.types.Transport;
-  private _consumerTransports: Map<string, mediasoup.types.Transport>; // Map<socketId, Transport>
-  private _producer: mediasoup.types.Producer;
-  private _consumers: Map<string, mediasoup.types.Consumer>; // Map<socketId, Consume>
+  private readonly broadcaster: Broadcaster = { sendTransport: null, producers: new Map() };
+  private readonly peers: Map<string, Peer> = new Map(); // Map<socketId, Peer>
 
   public title: string;
 
@@ -39,8 +31,8 @@ export default class Broadcast {
     router: mediasoup.types.Router;
     channel: Channel;
   }) {
-    this._router = router;
-    this._channel = channel;
+    this.router = router;
+    this.channel = channel;
   }
 
   public static async create({ channel }: { channel: Channel }) {
@@ -57,42 +49,55 @@ export default class Broadcast {
   }
 
   public getRouter() {
-    return this._router;
+    return this.router;
   }
 
   public getChannel() {
-    return this._channel;
+    return this.channel;
   }
 
-  public getProducerTransport() {
-    return this._producerTransport;
+  public getSendTransport() {
+    return this.broadcaster.sendTransport;
   }
 
-  public getConsumerTransport(socketId: string) {
-    return this._consumerTransports[socketId];
+  public getRecvTransport(socketId: string) {
+    return this.peers.get(socketId).recvTransport;
   }
 
-  public getProducer() {
-    return this._producer;
+  public getProducer(producerId: string) {
+    return this.broadcaster.producers.get(producerId);
   }
 
-  public getConsumer(socketId: string) {
-    return this._consumers[socketId];
+  public getConsumer(socketId: string, consumerId: string) {
+    return this.peers.get(socketId).consumers.get(consumerId);
   }
 
-  public setProducerTransport(transport: mediasoup.types.Transport) {
-    this._producerTransport = transport;
+  public getProducerIds() {
+    return Array.from(this.broadcaster.producers.keys());
   }
 
-  public addConsumerTransport(socketId: string, transport: mediasoup.types.Transport) {
-    this._consumerTransports.set(socketId, transport);
+  public setSendTransport(transport: mediasoup.types.WebRtcTransport) {
+    this.broadcaster.sendTransport = transport;
   }
 
-  public setProducer(producer: mediasoup.types.Producer) {
-    this._producer = producer;
+  public setRecvTransport(
+    socketId: string,
+    transport: mediasoup.types.WebRtcTransport,
+  ) {
+    if (!this.peers.has(socketId)) {
+      this.peers.set(socketId, { recvTransport: null, consumers: new Map() });
+    }
+    this.peers.get(socketId).recvTransport = transport;
+  }
+
+  public addProducer(producer: mediasoup.types.Producer) {
+    this.broadcaster.producers.set(producer.id, producer);
   }
 
   public addConsumer(socketId: string, consumer: mediasoup.types.Consumer) {
-    this._consumers.set(socketId, consumer);
+    if (!this.peers.has(socketId)) {
+      this.peers.set(socketId, { recvTransport: null, consumers: new Map() });
+    }
+    this.peers.get(socketId).consumers.set(consumer.id, consumer);
   }
 }

@@ -1,14 +1,20 @@
 import { Request } from "express";
 import { Server, Socket } from "socket.io";
-import Container from "typedi";
+import { Service } from "typedi";
 
 import { BroadcastService } from "@/services/BroadcastService";
 import { filterSentence } from "@/utils/chat-filter";
+import { SocketHandler, socketHandlerToken } from ".";
 
-export class BroadcastHandler {
-  private static readonly broadcastService: BroadcastService = Container.get(BroadcastService);
+@Service({ id: socketHandlerToken, multiple: true })
+export class BroadcastHandler implements SocketHandler {
+  private broadcastService: BroadcastService;
 
-  public static register(io: Server, socket: Socket) {
+  constructor(broadcastService: BroadcastService) {
+    this.broadcastService = broadcastService;
+  }
+
+  public register(io: Server, socket: Socket) {
     const req = socket.request as Request;
     const user = req.user;
 
@@ -91,5 +97,6 @@ export class BroadcastHandler {
         }
       },
     );
+
   }
 }

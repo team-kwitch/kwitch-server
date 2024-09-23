@@ -5,7 +5,7 @@ import { Service } from "typedi";
 import { ChannelService } from "@/services/ChannelService";
 
 @Service()
-@Controller("/api/channels")
+@Controller("/channels")
 export class ChannelController {
   private readonly channelService: ChannelService;
 

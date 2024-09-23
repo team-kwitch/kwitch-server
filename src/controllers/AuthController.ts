@@ -1,12 +1,20 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import passport from "passport";
-import { Authorized, Controller, Post, Req, Res, UseBefore } from "routing-controllers";
+import {
+  Authorized,
+  Controller,
+  JsonController,
+  Post,
+  Req,
+  Res,
+  UseBefore,
+} from "routing-controllers";
 import { Service } from "typedi";
 
 import AuthService from "@/services/AuthService";
 
 @Service()
-@Controller("/api/auth")
+@JsonController("/auth")
 export class AuthController {
   private readonly authService: AuthService;
 
@@ -27,43 +35,42 @@ export class AuthController {
   }
 
   @Post("/sign-in")
-  public async signIn(
-    @Req() req: Request,
-    @Res() res: Response,
-    next: (err?: any) => any,
-  ) {
-    passport.authenticate("local", (authErr, user, info) => {
-      if (authErr) {
-        console.error(authErr);
-        return res.status(500).json({ message: authErr.message });
-      }
-
-      if (!user) {
-        return res.status(401).json({ message: info.message });
-      }
-
-      return req.logIn(user, (loginErr) => {
-        if (loginErr) {
-          return res.status(500).json({ message: loginErr.message });
+  public async signIn(@Req() req: Request, @Res() res: Response) {
+    return new Promise((resolve, reject) => {
+      passport.authenticate("local", (authErr, user, info) => {
+        if (authErr) {
+          return reject(authErr);
         }
-        return res.json({
-          success: true,
-          content: { id: user.id, username: user.username },
+
+        if (!user) {
+          return res
+            .status(401)
+            .json({ success: false, message: info.message });
+        }
+
+        req.logIn(user, (loginErr) => {
+          if (loginErr) {
+            return reject(loginErr);
+          }
+
+          delete user.password;
+          return resolve({
+            success: true,
+            content: { user },
+          });
         });
-      });
-    })(req, res, next);
+      })(req, res);
+    });
   }
 
   @Post("/sign-out")
-  @Authorized()
   public async signOut(
     @Req() req: Request,
     @Res() res: Response,
-    next: (err?: any) => any,
   ) {
     req.logOut((err) => {
       if (err) {
-        next(err);
+        return res.status(500).json({ success: false, message: err.message });
       }
       return res.json({ success: true });
     });

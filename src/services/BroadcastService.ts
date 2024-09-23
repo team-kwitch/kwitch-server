@@ -55,6 +55,6 @@ export class BroadcastService {
   }
 
   public getBroadcasts() {
-    return this.broadcasts;
+    return Array.from(this.broadcasts.values());
   }
 }
