@@ -109,10 +109,10 @@ io.on("connection", (socket: Socket) => {
   });
 });
 
-httpServer.listen(config.app.port, async () => {
+httpServer.listen(config.https.listenPort, async () => {
   await redisConnection.FLUSHALL();
 
   await createWorker();
 
-  console.log(`server is running on port ${config.app.port}`);
+  console.log(`server is running on port ${config.https.listenPort}`);
 });

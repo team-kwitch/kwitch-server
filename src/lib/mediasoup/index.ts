@@ -1,3 +1,4 @@
+import { config } from "@/config";
 import { assert } from "console";
 import * as mediasoup from "mediasoup";
 
@@ -20,6 +21,10 @@ export async function createWorker() {
   });
 
   worker = newWorker;
+
+  const { webRtcServerOptions } = config.mediasoup;
+  const webRtcServer = await worker.createWebRtcServer(webRtcServerOptions);
+  worker.appData.webRtcServer = webRtcServer;
 
   setInterval(async () => {
     const usage = await worker.getResourceUsage();

@@ -37,10 +37,8 @@ export default class Broadcast {
 
   public static async create({ channel }: { channel: Channel }) {
     const worker = getWorker();
-    const { mediaCodecs } = config.mediasoup;
-    const router = await worker.createRouter({
-      mediaCodecs,
-    });
+    const { routerOptions } = config.mediasoup;
+    const router = await worker.createRouter(routerOptions);
 
     return new Broadcast({
       router,
